@@ -18,7 +18,7 @@ The following eggs need to be installed:
 
 NEX Style Index
 ---------------
-An 'index' file is a standard text file that will be converted into a gophermap.  Links to files or menus can be greated using the following at the start of a line:
+An 'index' file is a standard text file that will be converted into a gophermap.  Links to files or menus can be created using the following at the start of a line:
 ```
 => Path/URL [Optional Text]
 ```
