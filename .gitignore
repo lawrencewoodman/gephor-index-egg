@@ -1,0 +1,9 @@
+# Vim Swap files
+*.swp
+
+# Build artifacts
+gephor-index*.import.scm
+gephor-index*.o
+gephor-index*.so
+gephor-index*.link
+gephor-index*.sh

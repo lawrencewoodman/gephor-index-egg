@@ -1,0 +1,9 @@
+((synopsis "NEX style index handling for Gephor")
+ (version 0.1)
+ (license "MIT")
+ (author "Lawrence Woodman")
+ (category net)
+ (dependencies srfi-1 srfi-13 srfi-14 logfmt-logger gephor)
+ (test-dependencies test logfmt-logger gephor)
+ (components (extension gephor-index)))
+
