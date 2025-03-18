@@ -105,7 +105,7 @@
           "1The ba directory\tdir-b/dir-ba\tlocalhost\t70"
           "1The bb directory\tdir-b/dir-bb\tlocalhost\t70"
           "0dir-ba/baa.txt\tdir-b/dir-ba/baa.txt\tlocalhost\t70"
-          "9dir-ba/bac.bin\tdir-b/dir-ba/bac.bin\tlocalhost\t70"
+          "9dir-ba/bab.bin\tdir-b/dir-ba/bab.bin\tlocalhost\t70"
           "1Lots of white space (will be removed)\tdir-b/dir-ba\tlocalhost\t70"
           "0Lots of white space (will be removed)\tdir-b/dir-ba/baa.txt\tlocalhost\t70"
          ".\r\n")
@@ -115,7 +115,7 @@
                        "=> dir-ba/ The ba directory"
                        "=> dir-bb/ The bb directory"
                        "=> dir-ba/baa.txt"
-                       "=> dir-ba/bac.bin"
+                       "=> dir-ba/bab.bin"
                        "=>     dir-ba/            Lots of white space (will be removed)    "
                        "=>     dir-ba/baa.txt     Lots of white space (will be removed)    ")
                        "\n")))
