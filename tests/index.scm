@@ -67,6 +67,19 @@
           (menu-render (process-index fixtures-dir "dir-a" index) ) ) )
 
 
+  (test "process-index doesn't remove initial whitespace of first non blank line"
+        (string-intersperse '(
+          "i   This line has a few spaces at the start and two blanks lines before it\tdir-a\tlocalhost\t70"
+          ".\r\n")
+          "\r\n")
+        (let ((index (string-intersperse '(
+                       ""
+                       ""
+                       "   This line has a few spaces at the start and two blanks lines before it")
+                       "\n")))
+          (menu-render (process-index fixtures-dir "dir-a" index) ) ) )
+
+
   (test "process-index only recognizes links where => is at the beginning of the line"
         (string-intersperse '(
           "1A link with => starting at the beginning of the line\t\tlocalhost\t70"

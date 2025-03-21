@@ -62,19 +62,23 @@
           ;; will just link to the page that it is being displayed on
           (menu-item 'info line selector (server-hostname) (server-port) ) ) ) )
 
-  (let* ((lines (string-split (string-trim-both nex-index char-set:whitespace) "\n" #t))
+  (let* ((lines (string-split (string-trim-right nex-index char-set:whitespace) "\n" #t))
          (parsed-lines
            (do ((lines lines (cdr lines))
                 (line-num 1 (+ line-num 1))
-                (result '() (let ((item (parse-line (car lines))))
-                              (if item
-                                  (cons item result)
-                                  (begin
-                                    ;; TODO: Should this be error or warning?
-                                    (log-error "error processing index"
-                                               (cons 'selector selector)
-                                               (cons 'line line-num))
-                                    #f)))))
+                (result '() (let ((line (car lines)))
+                              (if (and (null? result)
+                                       (string-every char-set:whitespace line))
+                                  '()  ; Remove first blank lines
+                                  (let ((item (parse-line line)))
+                                    (if item
+                                        (cons item result)
+                                        (begin
+                                          ;; TODO: Should this be error or warning?
+                                          (log-error "error processing index"
+                                                     (cons 'selector selector)
+                                                     (cons 'line line-num))
+                                          #f)))))))
                 ((or (null? lines) (not result)) result))))
     (and parsed-lines
          (reverse parsed-lines) ) ) )

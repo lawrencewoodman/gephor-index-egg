@@ -31,10 +31,7 @@
 
   (test "serve-index process empty 'index' files properly if present"
         ;; Whitespace is stripped at the beginning and end of file
-        (string-intersperse '(
-          "i\tdir-index_empty_file\tlocalhost\t70"
-          ".\r\n")
-          "\r\n")
+        ".\r\n"
         (serve-index fixtures-dir
                     (make-request "dir-index_empty_file" "127.0.0.1") ) )
 
