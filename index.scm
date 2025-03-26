@@ -74,7 +74,6 @@
                                     (if item
                                         (cons item result)
                                         (begin
-                                          ;; TODO: Should this be error or warning?
                                           (log-error "error processing index"
                                                      (cons 'selector selector)
                                                      (cons 'line line-num))

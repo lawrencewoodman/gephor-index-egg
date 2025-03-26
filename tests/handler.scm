@@ -46,7 +46,7 @@
                     (make-request "dir-index_empty_file" "127.0.0.1") ) )
 
 
-  (test "serve-index returns #f  if an 'index' file isn't world readable"
+  (test "serve-index returns #f if an 'index' file isn't world readable"
         (list (string-intersperse '(
                 "iThis is used to test an index file that isn't world readable\t\tlocalhost\t70"
                 ".\r\n")
@@ -69,9 +69,11 @@
             (list response1 response2) ) ) )
 
 
-  (test "serve-path returns false if path doesn't exist"
+  (test "serve-path/index returns false if path doesn't exist"
         #f
-        (serve-path fixtures-dir (make-request "unknown" "127.0.0.1") ) )
+        (serve-path/index fixtures-dir (make-request "unknown" "127.0.0.1") ) )
+
+
 
 
 ) )
