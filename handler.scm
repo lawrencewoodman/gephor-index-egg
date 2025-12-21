@@ -37,10 +37,10 @@
              (and (file-exists? index-path)
                   (and-let* ((nex-index (read-file index-path))
                              (response (process-index root-dir selector nex-index)))
-                    (log-info "serving index"
-                       (cons 'handler 'serve-index)
-                       (cons 'index-path index-path)
-                       (cons 'selector selector)
-                       (cons 'client-address client-address))
+                    (log-debug "serving index"
+                               (cons 'handler 'serve-index)
+                               (cons 'index-path index-path)
+                               (cons 'selector selector)
+                               (cons 'client-address client-address))
                     (menu-render response) ) ) ) ) ) ) )
 
