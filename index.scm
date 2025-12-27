@@ -75,7 +75,7 @@
                                         (cons item result)
                                         (begin
                                           (log-error "error processing index"
-                                                     (cons 'selector selector)
+                                                     (cons 'connection-id (connection-id))
                                                      (cons 'line line-num))
                                           #f)))))))
                 ((or (null? lines) (not result)) result))))

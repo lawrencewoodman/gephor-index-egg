@@ -40,7 +40,6 @@
                     (log-debug "serving index"
                                (cons 'handler 'serve-index)
                                (cons 'index-path index-path)
-                               (cons 'selector selector)
-                               (cons 'client-address client-address))
+                               (cons 'connection-id (connection-id)))
                     (menu-render response) ) ) ) ) ) ) )
 

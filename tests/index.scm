@@ -4,51 +4,56 @@
 
 
   (test "process-index returns #f and logs an error if file in 'index' doesn't exist"
-        (list #f "ts=#t level=error msg=\"error processing index\" selector=dir-a line=1\n")
+        (list #f "ts=#t level=error msg=\"error processing index\" connection-id=2 line=1\n")
         (let ((index "=> nonexistent.txt")
               (port (open-output-string)))
           (parameterize ((log-level 0)
-                         (log-port port))
+                         (log-port port)
+                         (connection-id 2))
             (list (process-index fixtures-dir "dir-a" index)
                   (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
 
 
   (test "process-index returns #f and logs an error if an absolute link in 'index' is unsafe"
-        (list #f "ts=#t level=error msg=\"error processing index\" selector=dir-a line=1\n")
+        (list #f "ts=#t level=error msg=\"error processing index\" connection-id=2 line=1\n")
         (let ((index "=> /../run.scm An unsafe absolute link\n")
               (port (open-output-string)))
           (parameterize ((log-level 0)
-                         (log-port port))
+                         (log-port port)
+                         (connection-id 2))
             (list (process-index fixtures-dir "dir-a" index)
                   (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
 
 
   (test "process-index returns #f and logs an error if a link to a directory doesn't have a trailing '/'"
-        (list #f "ts=#t level=error msg=\"error processing index\" selector=dir-b line=1\n")
+        (list #f "ts=#t level=error msg=\"error processing index\" connection-id=2 line=1\n")
         (let ((index "=> dir-ba This is actually a directory")
               (port (open-output-string)))
           (parameterize ((log-level 0)
-                         (log-port port))
+                         (log-port port)
+                         (connection-id 2))
             (list (process-index fixtures-dir "dir-b" index)
                   (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
 
 
   (test "process-index returns #f and logs an error if a relative link in 'index' is unsafe"
-        (list #f "ts=#t level=error msg=\"error processing index\" selector=dir-a line=1\n")
+        (list #f "ts=#t level=error msg=\"error processing index\" connection-id=2 line=1\n")
         (let ((index "=> ../run.scm An unsafe relative link")
               (port (open-output-string)))
           (parameterize ((log-level 0)
-                         (log-port port))
+                         (log-port port)
+                         (connection-id 2))
             (list (process-index fixtures-dir "dir-a" index)
                   (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
 
 
   (test "process-index returns #f and logs an error if a URL link protocol is unknown"
-        (list #f "ts=#t level=error msg=\"error processing index\" selector=dir-a line=1\n")
+        (list #f "ts=#t level=error msg=\"error processing index\" connection-id=2 line=1\n")
         (let ((index "=> fred://example.com")
               (port (open-output-string)))
           (parameterize ((log-level 0)
-                         (log-port port))
+                         (log-port port)
+                         (connection-id 2))
             (list (process-index fixtures-dir "dir-a" index)
                   (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
 
