@@ -29,10 +29,10 @@
         (serve-index fixtures-dir (make-request "dir-b" "127.0.0.1") ) )
 
 
-  (test "serve-index outputs a debug log if index is processed successfully"
-        "ts=#t level=debug msg=\"serving index\" handler=serve-index index-path=#t connection-id=3\n"
+  (test "serve-index outputs a info log if index is processed successfully"
+        "ts=#t level=info msg=\"serving index\" handler=serve-index index-path=#t connection-id=3\n"
         (let* ((log-test-port (open-output-string)))
-          (parameterize ((log-level 'debug)
+          (parameterize ((log-level 'info)
                          (log-port log-test-port)
                          (connection-id 3))
             (serve-index fixtures-dir (make-request "dir-b" "127.0.0.1"))

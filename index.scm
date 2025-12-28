@@ -16,7 +16,7 @@
 ;; Process a NEX style index file.  This describes a menu and returns a list
 ;; of menu items.
 ;; TODO: rename?
-;; TODO: Improve error logging
+;; TODO: Improve error/warning logging
 (define (process-index root-dir selector nex-index)
 
   (define (dir-item path username)
@@ -77,11 +77,11 @@
                                     (if item
                                         (cons item result)
                                         (begin
-                                          (log-error "error processing index"
-                                                     (cons 'connection-id (connection-id))
-                                                     (cons 'line line-num))
-                                          #f)))))))
-                ((or (null? lines) (not result)) result))))
+                                          (log-warning "problem processing index"
+                                                       (cons 'connection-id (connection-id))
+                                                       (cons 'line line-num))
+                                          result)))))))
+                ((null? lines) result))))
     (and parsed-lines
          (reverse parsed-lines) ) ) )
 
