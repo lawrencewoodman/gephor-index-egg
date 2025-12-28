@@ -48,7 +48,10 @@
                                path
                                maybe-username))
                  (chomped-username (if (string=? maybe-username "")
-                                       (string-chomp path "/")
+                                       ;; Ensure that we don't create an empty selector
+                                       (if (string=? path "/")
+                                           path
+                                           (string-chomp path "/"))
                                        maybe-username)))
             (cond
               ((is-url? path)

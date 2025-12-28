@@ -154,6 +154,17 @@
           (menu-render (process-index fixtures-dir "dir-a" index) ) ) )
 
 
+  (test "process-index uses '/' as the username for a link with this path that doesn't specify a username"
+        (string-intersperse '(
+          "1/\t\tlocalhost\t70"
+          ".\r\n")
+          "\r\n")
+        (let ((index (string-intersperse '(
+                       "=> /"
+                       "\n"))))
+          (menu-render (process-index fixtures-dir "" index) ) ) )
+
+
   (test "process-index supports URL links"
         (string-intersperse '(
           "hhttp://example.com\tURL:http://example.com\tlocalhost\t70"
