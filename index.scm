@@ -77,9 +77,10 @@
                                     (if item
                                         (cons item result)
                                         (begin
-                                          (log-warning "problem processing index"
-                                                       (cons 'connection-id (connection-id))
-                                                       (cons 'line line-num))
+                                          (apply log-warning
+                                                 "problem processing index"
+                                                 (cons 'line line-num)
+                                                 (log-context))
                                           result)))))))
                 ((null? lines) result))))
     (and parsed-lines

@@ -16,6 +16,7 @@
 ;;   serve-index serve-path
 ;; Returns the value of the last handler tried.
 ;; TODO: Test
+(: serve-path/index (string * -> (or string false)))
 (define (serve-path/index root-dir request)
   (any (lambda (h) (h root-dir request))
        (list serve-index serve-path) ) )
@@ -26,6 +27,7 @@
 ;; See selector->local-path in gephor egg for more information about
 ;; selector requirements.
 ;; Returns #f if index file doesn't exist or can't be processed properly.
+(: serve-index (string * -> (or string false)))
 (define (serve-index root-dir request)
   (let ((selector (request-selector request))
         (client-address (request-client-address request)))
@@ -37,9 +39,10 @@
              (and (file-exists? index-path)
                   (and-let* ((nex-index (read-file index-path))
                              (response (process-index root-dir selector nex-index)))
-                    (log-info "serving index"
-                              (cons 'handler 'serve-index)
-                              (cons 'index-path index-path)
-                              (cons 'connection-id (connection-id)))
+                    (apply log-info
+                           "serving index"
+                           (cons 'handler 'serve-index)
+                           (cons 'index-path index-path)
+                           (log-context))
                     (menu-render response) ) ) ) ) ) ) )
 

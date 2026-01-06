@@ -4,13 +4,17 @@
 
 
   (test "process-index returns partially processed index and logs a warning if file in 'index' doesn't exist"
-        (list '() "ts=#t level=warning msg=\"problem processing index\" connection-id=2 line=1\n")
-        (let ((index "=> nonexistent.txt")
+        (list
+          "ihello\tdir-a\tlocalhost\t70\r\n.\r\n"
+          (conc (sprintf "ts=#t level=error msg=\"file doesn't exist\" local-path=~A connection-id=2\n"
+                         (make-pathname fixtures-dir "dir-a/nonexistent.txt"))
+"ts=#t level=warning msg=\"problem processing index\" line=2 connection-id=2\n"))
+        (let ((index "hello\n=> nonexistent.txt")
               (port (open-output-string)))
           (parameterize ((log-level 0)
                          (log-port port)
-                         (connection-id 2))
-            (list (process-index fixtures-dir "dir-a" index)
+                         (log-context (list (cons 'connection-id 2))))
+            (list (menu-render (process-index fixtures-dir "dir-a" index))
                   (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
 
 
@@ -21,7 +25,9 @@
             "1unknown\tdir-a/unknown\tlocalhost\t70"
             ".\r\n")
             "\r\n")
-          "ts=#t level=warning msg=\"problem processing index\" connection-id=2 line=2\n")
+          (conc (sprintf "ts=#t level=error msg=\"file doesn't exist\" local-path=~A connection-id=2\n"
+                         (make-pathname fixtures-dir "fred.txt"))
+                "ts=#t level=warning msg=\"problem processing index\" line=2 connection-id=2\n"))
         (let ((index (string-intersperse '(
                        "=> /unknown/"
                        "=> /fred.txt"
@@ -30,51 +36,54 @@
               (port (open-output-string)))
           (parameterize ((log-level 0)
                          (log-port port)
-                         (connection-id 2))
+                         (log-context (list (cons 'connection-id 2))))
             (list (menu-render (process-index fixtures-dir "dir-a" index))
                   (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
 
 
   (test "process-index returns partially processed index and logs a warning if an absolute link in 'index' is unsafe"
-        (list '() "ts=#t level=warning msg=\"problem processing index\" connection-id=2 line=1\n")
+        (list '() "ts=#t level=warning msg=\"problem processing index\" line=1 connection-id=2\n")
         (let ((index "=> /../run.scm An unsafe absolute link\n")
               (port (open-output-string)))
           (parameterize ((log-level 0)
                          (log-port port)
-                         (connection-id 2))
+                         (log-context (list (cons 'connection-id 2))))
             (list (process-index fixtures-dir "dir-a" index)
                   (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
 
 
   (test "process-index returns partially processed index and logs a warning if a link to a directory doesn't have a trailing '/'"
-        (list '() "ts=#t level=warning msg=\"problem processing index\" connection-id=2 line=1\n")
+        (list '() "ts=#t level=warning msg=\"problem processing index\" line=1 connection-id=2\n")
         (let ((index "=> dir-ba This is actually a directory")
               (port (open-output-string)))
           (parameterize ((log-level 0)
                          (log-port port)
-                         (connection-id 2))
+                         (log-context (list (cons 'connection-id 2))))
             (list (process-index fixtures-dir "dir-b" index)
                   (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
 
 
   (test "process-index returns partially processed index and logs a warning if a relative link in 'index' is unsafe"
-        (list '() "ts=#t level=warning msg=\"problem processing index\" connection-id=2 line=1\n")
+        (list '() "ts=#t level=warning msg=\"problem processing index\" line=1 connection-id=2\n")
         (let ((index "=> ../run.scm An unsafe relative link")
               (port (open-output-string)))
           (parameterize ((log-level 0)
                          (log-port port)
-                         (connection-id 2))
+                         (log-context (list (cons 'connection-id 2))))
             (list (process-index fixtures-dir "dir-a" index)
                   (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
 
 
   (test "process-index returns partial processed index and logs a warning if a URL link protocol is unknown"
-        (list '() "ts=#t level=warning msg=\"problem processing index\" connection-id=2 line=1\n")
+        (list '()
+              (conc
+                "ts=#t level=error msg=\"unknown protocol\" url=fred://example.com connection-id=2\n"
+                "ts=#t level=warning msg=\"problem processing index\" line=1 connection-id=2\n"))
         (let ((index "=> fred://example.com")
               (port (open-output-string)))
           (parameterize ((log-level 0)
                          (log-port port)
-                         (connection-id 2))
+                         (log-context (list (cons 'connection-id 2))))
             (list (process-index fixtures-dir "dir-a" index)
                   (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
 

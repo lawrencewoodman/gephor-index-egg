@@ -34,7 +34,7 @@
         (let* ((log-test-port (open-output-string)))
           (parameterize ((log-level 'info)
                          (log-port log-test-port)
-                         (connection-id 3))
+                         (log-context (list (cons 'connection-id 3))))
             (serve-index fixtures-dir (make-request "dir-b" "127.0.0.1"))
             (irregex-replace/all "index-path=.*?dir-b\/index"
               (confirm-log-entries-valid-timestamp (get-output-string log-test-port))
