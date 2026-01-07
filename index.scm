@@ -27,9 +27,18 @@
 
   (define (file-item path username)
     (define (make-item full-path item-selector)
-      (and (safe-path? root-dir full-path)
-           (not (directory? full-path))
-           (menu-item-file full-path username item-selector) ) )
+      (if (safe-path? root-dir full-path)
+          (if (directory? full-path)
+              (begin
+                (apply log-error
+                       "path is a directory but link doesn't have a trailing /"
+                       (cons 'path path)
+                       (log-context))
+                #f)
+                (menu-item-file full-path username item-selector))
+          (begin
+            (apply log-error "path isn't safe" (cons 'path path) (log-context))
+            #f) ) )
 
     (if (absolute-pathname? path)
         (let ((full-path (make-pathname root-dir (trim-path-selector path))))

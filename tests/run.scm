@@ -28,10 +28,19 @@
 ;; TODO: Test log output
 (log-level 100)
 
+;; The path of the tests directory
+(define tests-dir
+  (let loop ((dirs (list (current-directory) (normalize-pathname (make-pathname (current-directory) "..")))))
+    (if (null? dirs) (error "can't find tests directory"))
+    (let ((try-path (make-pathname (car dirs) "tests")))
+      (if (and (file-exists? try-path) (directory? try-path))
+          try-path
+          (loop (cdr dirs))))))
+
 
 ;; The path of the fixtures directory
 (define fixtures-dir
-  (let loop ((dirs (list (current-directory) (make-pathname (current-directory) "tests"))))
+  (let loop ((dirs (list (current-directory) tests-dir)))
     (if (null? dirs) (error "can't find fixtures directory"))
     (let ((try-path (make-pathname (car dirs) "fixtures")))
       (if (and (file-exists? try-path) (directory? try-path))

@@ -3,7 +3,7 @@
 (test-group "index"
 
 
-  (test "process-index returns partially processed index and logs a warning if file in 'index' doesn't exist"
+  (test "process-index returns partially processed index and logs an error if file in 'index' doesn't exist"
         (list
           "ihello\tdir-a\tlocalhost\t70\r\n.\r\n"
           (conc (sprintf "ts=#t level=error msg=\"file doesn't exist\" local-path=~A connection-id=2\n"
@@ -18,7 +18,7 @@
                   (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
 
 
-  (test "process-index keeps processing after warnings and returns partially processed index"
+  (test "process-index keeps processing after some errors and returns partially processed index"
         (list
           (string-intersperse '(
             "1/unknown\tunknown\tlocalhost\t70"
@@ -41,9 +41,12 @@
                   (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
 
 
-  (test "process-index returns partially processed index and logs a warning if an absolute link in 'index' is unsafe"
-        (list '() "ts=#t level=warning msg=\"problem processing index\" line=1 connection-id=2\n")
-        (let ((index "=> /../run.scm An unsafe absolute link\n")
+  (test "process-index returns partially processed index and logs an error if an absolute link in 'index' is unsafe"
+        (list '()
+              (conc
+                "ts=#t level=error msg=\"path isn't safe\" path=/../run.scm connection-id=2\n"
+                "ts=#t level=warning msg=\"problem processing index\" line=1 connection-id=2\n"))
+        (let ((index (sprintf "=> /../run.scm An unsafe absolute link\n"))
               (port (open-output-string)))
           (parameterize ((log-level 0)
                          (log-port port)
@@ -52,8 +55,11 @@
                   (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
 
 
-  (test "process-index returns partially processed index and logs a warning if a link to a directory doesn't have a trailing '/'"
-        (list '() "ts=#t level=warning msg=\"problem processing index\" line=1 connection-id=2\n")
+  (test "process-index returns partially processed index and logs a error if a link to a directory doesn't have a trailing '/'"
+        (list '()
+              (conc
+                "ts=#t level=error msg=\"path is a directory but link doesn't have a trailing /\" path=dir-ba connection-id=2\n"
+                "ts=#t level=warning msg=\"problem processing index\" line=1 connection-id=2\n"))
         (let ((index "=> dir-ba This is actually a directory")
               (port (open-output-string)))
           (parameterize ((log-level 0)
@@ -63,8 +69,11 @@
                   (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
 
 
-  (test "process-index returns partially processed index and logs a warning if a relative link in 'index' is unsafe"
-        (list '() "ts=#t level=warning msg=\"problem processing index\" line=1 connection-id=2\n")
+  (test "process-index returns partially processed index and logs an error if a relative link in 'index' is unsafe"
+        (list '()
+              (conc
+                "ts=#t level=error msg=\"path isn't safe\" path=../run.scm connection-id=2\n"
+                "ts=#t level=warning msg=\"problem processing index\" line=1 connection-id=2\n"))
         (let ((index "=> ../run.scm An unsafe relative link")
               (port (open-output-string)))
           (parameterize ((log-level 0)
@@ -74,10 +83,10 @@
                   (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
 
 
-  (test "process-index returns partial processed index and logs a warning if a URL link protocol is unknown"
+  (test "process-index returns partial processed index and logs an error if a URL link protocol is unknown"
         (list '()
               (conc
-                "ts=#t level=error msg=\"unknown protocol\" url=fred://example.com connection-id=2\n"
+                "ts=#t level=error msg=\"unknown protocol\" username=fred://example.com url=fred://example.com connection-id=2\n"
                 "ts=#t level=warning msg=\"problem processing index\" line=1 connection-id=2\n"))
         (let ((index "=> fred://example.com")
               (port (open-output-string)))
