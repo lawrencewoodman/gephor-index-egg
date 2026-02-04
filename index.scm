@@ -17,81 +17,27 @@
 ;; of menu items.
 ;; TODO: rename?
 ;; TODO: Improve error/warning logging
-(define (process-index root-dir selector nex-index)
-
-  (define (dir-item path username)
-    (let ((item-selector (if (absolute-pathname? path)
-                             (trim-path-selector path)
-                             (make-pathname selector (string-chomp path "/")))))
-      (menu-item 'menu username item-selector (server-hostname) (server-port) ) ) )
-
-  (define (file-item path username)
-    (define (make-item full-path item-selector)
-      (if (safe-path? root-dir full-path)
-          (if (directory? full-path)
+(define (process-index root-dir request-selector nex-index)
+  (define (parse-line-add-to-result result line-num line)
+    (if (and (null? result) (string-every char-set:whitespace line))
+        '()  ; Remove first blank lines
+        (let ((item (parse-line root-dir request-selector line)))
+          (if item
+              (cons item result)
               (begin
-                (apply log-error
-                       "path is a directory but link doesn't have a trailing /"
-                       (cons 'path path)
+                (apply log-warning
+                       "problem processing index"
+                       (cons 'line line-num)
                        (log-context))
-                #f)
-                (menu-item-file full-path username item-selector))
-          (begin
-            (apply log-error "path isn't safe" (cons 'path path) (log-context))
-            #f) ) )
+                result)))))
 
-    (if (absolute-pathname? path)
-        (let ((full-path (make-pathname root-dir (trim-path-selector path))))
-          (make-item full-path (trim-path-selector path)))
-        (let ((full-path (make-pathname (list root-dir selector)
-                                        (trim-path-selector path)))
-              (item-selector (make-pathname selector path)))
-          (make-item full-path item-selector) ) ) )
-
-  (define (parse-line line)
-    (let ((link-match (irregex-search index-link-split-regex line)))
-      (if (irregex-match-data? link-match)
-          (let* ((path (irregex-match-substring link-match 1))
-                 (maybe-username (irregex-match-substring link-match 2))
-                 (username (if (string=? maybe-username "")
-                               path
-                               maybe-username))
-                 (chomped-username (if (string=? maybe-username "")
-                                       ;; Ensure that we don't create an empty selector
-                                       (if (string=? path "/")
-                                           path
-                                           (string-chomp path "/"))
-                                       maybe-username)))
-            (cond
-              ((is-url? path)
-                (menu-item-url username path))
-              ((is-dir? path)
-                (dir-item path chomped-username))
-              (else
-                (file-item path username))))
-          ;; Current selector is used for info itemtype so that if type
-          ;; not supported by client but still displayed then it
-          ;; will just link to the page that it is being displayed on
-          (menu-item 'info line selector (server-hostname) (server-port) ) ) ) )
-
-  (let* ((lines (string-split (string-trim-right nex-index char-set:whitespace) "\n" #t))
+  (let* ((lines (string-split (string-trim-right nex-index
+                                                 char-set:whitespace) "\n" #t))
          (parsed-lines
            (do ((lines lines (cdr lines))
                 (line-num 1 (+ line-num 1))
-                (result '() (let ((line (car lines)))
-                              (if (and (null? result)
-                                       (string-every char-set:whitespace line))
-                                  '()  ; Remove first blank lines
-                                  (let ((item (parse-line line)))
-                                    (if item
-                                        (cons item result)
-                                        (begin
-                                          (apply log-warning
-                                                 "problem processing index"
-                                                 (cons 'line line-num)
-                                                 (log-context))
-                                          result)))))))
-                ((null? lines) result))))
+                (result '() (parse-line-add-to-result result line-num (car lines))))
+               ((null? lines) result))))
     (and parsed-lines
          (reverse parsed-lines) ) ) )
 
@@ -111,3 +57,60 @@
   (let ((url-match (irregex-match url-regex path)))
     (irregex-match-data? url-match)))
 
+;; Return a file menu item
+(define (file-item root-dir request-selector path username)
+  (define (make-item full-path item-selector)
+    (if (safe-path? root-dir full-path)
+        (if (directory? full-path)
+            (begin
+              (apply log-error
+                     "path is a directory but link doesn't have a trailing /"
+                     (cons 'path path)
+                     (log-context))
+              #f)
+              (menu-item-file full-path username item-selector))
+        (begin
+          (apply log-error "path isn't safe" (cons 'path path) (log-context))
+          #f) ) )
+
+  (if (absolute-pathname? path)
+      (let ((full-path (make-pathname root-dir (trim-path-selector path))))
+        (make-item full-path (trim-path-selector path)))
+      (let ((full-path (make-pathname (list root-dir selector)
+                                      (trim-path-selector path)))
+            (item-selector (make-pathname selector path)))
+        (make-item full-path item-selector) ) ) )
+
+;; Return a menu item menu
+(define (dir-item selector path username)
+  (let ((item-selector (if (absolute-pathname? path)
+                           (trim-path-selector path)
+                           (make-pathname selector (string-chomp path "/")))))
+    (menu-item 'menu username item-selector (server-hostname) (server-port) ) ) )
+
+;; Parse an index line and return a menu item
+(define (parse-line root-dir selector line)
+  (let ((link-match (irregex-search index-link-split-regex line)))
+    (if (irregex-match-data? link-match)
+        (let* ((path (irregex-match-substring link-match 1))
+               (maybe-username (irregex-match-substring link-match 2))
+               (username (if (string=? maybe-username "")
+                             path
+                             maybe-username))
+               (chomped-username (if (string=? maybe-username "")
+                                     ;; Ensure that we don't create an empty selector
+                                     (if (string=? path "/")
+                                         path
+                                         (string-chomp path "/"))
+                                     maybe-username)))
+          (cond
+            ((is-url? path)
+              (menu-item-url username path))
+            ((is-dir? path)
+              (dir-item selector path chomped-username))
+            (else
+              (file-item root-dir selector path username))))
+        ;; Current selector is used for info itemtype so that if type
+        ;; not supported by client but still displayed then it
+        ;; will just link to the page that it is being displayed on
+        (menu-item 'info line selector (server-hostname) (server-port) ) ) ) )
