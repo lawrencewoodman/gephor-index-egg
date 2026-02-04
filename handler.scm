@@ -37,7 +37,11 @@
       (and (directory? local-path)
            (let ((index-path (make-pathname local-path "index")))
              (and (file-exists? index-path)
-                  (and-let* ((nex-index (read-file index-path))
+                  ;; TODO: max-response-size for safe-read-file
+                  ;; TODO: doesn't make sense, replace this
+                  (and-let* ((nex-index (safe-read-file (max-response-size)
+                                                        root-dir
+                                                        index-path))
                              (response (process-index root-dir selector nex-index)))
                     (apply log-info
                            "serving index"
