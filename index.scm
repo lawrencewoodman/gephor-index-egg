@@ -76,9 +76,9 @@
   (if (absolute-pathname? path)
       (let ((full-path (make-pathname root-dir (trim-path-selector path))))
         (make-item full-path (trim-path-selector path)))
-      (let ((full-path (make-pathname (list root-dir selector)
+      (let ((full-path (make-pathname (list root-dir request-selector)
                                       (trim-path-selector path)))
-            (item-selector (make-pathname selector path)))
+            (item-selector (make-pathname request-selector path)))
         (make-item full-path item-selector) ) ) )
 
 ;; Return a menu item menu
