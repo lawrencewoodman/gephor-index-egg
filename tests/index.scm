@@ -83,12 +83,12 @@
                   (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
 
 
-  (test "process-index returns partial processed index and logs an error if a URL link protocol is unknown"
+  (test "process-index returns partial processed index and logs an error if a URL is invalid"
         (list '()
               (conc
-                "ts=#t level=error msg=\"unknown protocol\" username=fred://example.com url=fred://example.com connection-id=2\n"
+                "ts=#t level=error msg=\"invalid URL\" username=telnet://example.com/fred url=telnet://example.com/fred connection-id=2\n"
                 "ts=#t level=warning msg=\"problem processing index\" line=1 connection-id=2\n"))
-        (let ((index "=> fred://example.com")
+        (let ((index "=> telnet://example.com/fred")
               (port (open-output-string)))
           (parameterize ((log-level 0)
                          (log-port port)
