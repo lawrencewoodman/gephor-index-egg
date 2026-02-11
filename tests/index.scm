@@ -6,9 +6,8 @@
   (test "process-index returns partially processed index and logs an error if file in 'index' doesn't exist"
         (list
           "ihello\tdir-a\tlocalhost\t70\r\n.\r\n"
-          (conc (sprintf "ts=#t level=error msg=\"file doesn't exist\" local-path=~A connection-id=2\n"
-                         (make-pathname fixtures-dir "dir-a/nonexistent.txt"))
-"ts=#t level=warning msg=\"problem processing index\" line=2 connection-id=2\n"))
+          (sprintf "ts=#t level=error msg=\"problem processing index: file doesn't exist or unknown type\" line=2 path=nonexistent.txt local-path=~A connection-id=2\n"
+                   (make-pathname fixtures-dir "dir-a/nonexistent.txt")))
         (let ((index "hello\n=> nonexistent.txt")
               (port (open-output-string)))
           (parameterize ((log-level 0)
@@ -25,9 +24,8 @@
             "1unknown\tdir-a/unknown\tlocalhost\t70"
             ".\r\n")
             "\r\n")
-          (conc (sprintf "ts=#t level=error msg=\"file doesn't exist\" local-path=~A connection-id=2\n"
-                         (make-pathname fixtures-dir "fred.txt"))
-                "ts=#t level=warning msg=\"problem processing index\" line=2 connection-id=2\n"))
+          (sprintf "ts=#t level=error msg=\"problem processing index: file doesn't exist or unknown type\" line=2 path=\/fred.txt local-path=~A connection-id=2\n"
+                   (make-pathname fixtures-dir "fred.txt")))
         (let ((index (string-intersperse '(
                        "=> /unknown/"
                        "=> /fred.txt"
@@ -43,9 +41,7 @@
 
   (test "process-index returns partially processed index and logs an error if an absolute link in 'index' is unsafe"
         (list '()
-              (conc
-                "ts=#t level=error msg=\"path isn't safe\" path=/../run.scm connection-id=2\n"
-                "ts=#t level=warning msg=\"problem processing index\" line=1 connection-id=2\n"))
+              "ts=#t level=error msg=\"problem processing index: path isn't safe\" line=1 path=/../run.scm connection-id=2\n")
         (let ((index (sprintf "=> /../run.scm An unsafe absolute link\n"))
               (port (open-output-string)))
           (parameterize ((log-level 0)
@@ -57,9 +53,7 @@
 
   (test "process-index returns partially processed index and logs a error if a link to a directory doesn't have a trailing '/'"
         (list '()
-              (conc
-                "ts=#t level=error msg=\"path is a directory but link doesn't have a trailing /\" path=dir-ba connection-id=2\n"
-                "ts=#t level=warning msg=\"problem processing index\" line=1 connection-id=2\n"))
+              "ts=#t level=error msg=\"problem processing index: path is a directory but link doesn't have a trailing /\" line=1 path=dir-ba connection-id=2\n")
         (let ((index "=> dir-ba This is actually a directory")
               (port (open-output-string)))
           (parameterize ((log-level 0)
@@ -71,9 +65,7 @@
 
   (test "process-index returns partially processed index and logs an error if a relative link in 'index' is unsafe"
         (list '()
-              (conc
-                "ts=#t level=error msg=\"path isn't safe\" path=../run.scm connection-id=2\n"
-                "ts=#t level=warning msg=\"problem processing index\" line=1 connection-id=2\n"))
+              "ts=#t level=error msg=\"problem processing index: path isn't safe\" line=1 path=../run.scm connection-id=2\n")
         (let ((index "=> ../run.scm An unsafe relative link")
               (port (open-output-string)))
           (parameterize ((log-level 0)
@@ -85,16 +77,15 @@
 
   (test "process-index returns partial processed index and logs an error if a URL is invalid"
         (list '()
-              (conc
-                "ts=#t level=error msg=\"invalid URL\" username=telnet://example.com/fred url=telnet://example.com/fred connection-id=2\n"
-                "ts=#t level=warning msg=\"problem processing index\" line=1 connection-id=2\n"))
-        (let ((index "=> telnet://example.com/fred")
+              "ts=#t level=error msg=\"problem processing index: invalid URL\" line=1 username=\"telnet to example\" url=telnet://example.com/fred connection-id=2\n")
+        (let ((index "=> telnet://example.com/fred telnet to example")
               (port (open-output-string)))
           (parameterize ((log-level 0)
                          (log-port port)
                          (log-context (list (cons 'connection-id 2))))
             (list (process-index fixtures-dir "dir-a" index)
                   (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
+
 
   (test "process-index removes blank lines at top and bottom of index"
         (string-intersperse '(

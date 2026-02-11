@@ -16,20 +16,14 @@
 ;; Process a NEX style index file.  This describes a menu and returns a list
 ;; of menu items.
 ;; TODO: rename?
-;; TODO: Improve error/warning logging
 (define (process-index root-dir request-selector nex-index)
   (define (parse-line-add-to-result result line-num line)
     (if (and (null? result) (string-every char-set:whitespace line))
         '()  ; Remove first blank lines
-        (let ((item (parse-line root-dir request-selector line)))
+        (let ((item (parse-line line-num root-dir request-selector line)))
           (if item
               (cons item result)
-              (begin
-                (apply log-warning
-                       "problem processing index"
-                       (cons 'line line-num)
-                       (log-context))
-                result)))))
+              result))))
 
   (let* ((lines (string-split (string-trim-right nex-index
                                                  char-set:whitespace) "\n" #t))
@@ -57,20 +51,49 @@
   (let ((url-match (irregex-match url-regex path)))
     (irregex-match-data? url-match)))
 
+;; Return a menu item from a URL
+(define (url-item line-num path username)
+  (let ((item (menu-item-url username path)))
+    (if item
+        item
+        (begin
+          (apply log-error
+                 "problem processing index: invalid URL"
+                 (cons 'line line-num)
+                 (cons 'username username)
+                 (cons 'url path)
+                 (log-context))
+          #f))))
+
+;; TODO: Create a log-problem-processing-index func
+
 ;; Return a file menu item
-(define (file-item root-dir request-selector path username)
+(define (file-item line-num root-dir request-selector path username)
   (define (make-item full-path item-selector)
     (if (safe-path? root-dir full-path)
         (if (directory? full-path)
             (begin
               (apply log-error
-                     "path is a directory but link doesn't have a trailing /"
+                     "problem processing index: path is a directory but link doesn't have a trailing /"
+                     (cons 'line line-num)
                      (cons 'path path)
                      (log-context))
               #f)
-              (menu-item-file full-path username item-selector))
+            (let ((item (menu-item-file full-path username item-selector)))
+              (if item
+                  item
+                  (begin
+                    (apply log-error "problem processing index: file doesn't exist or unknown type"
+                           (cons 'line line-num)
+                           (cons 'path path)
+                           (cons 'local-path full-path)
+                           (log-context))
+                    #f))))
         (begin
-          (apply log-error "path isn't safe" (cons 'path path) (log-context))
+          (apply log-error "problem processing index: path isn't safe"
+                           (cons 'line line-num)
+                           (cons 'path path)
+                           (log-context))
           #f) ) )
 
   (if (absolute-pathname? path)
@@ -89,7 +112,7 @@
     (menu-item 'menu username item-selector (server-hostname) (server-port) ) ) )
 
 ;; Parse an index line and return a menu item
-(define (parse-line root-dir selector line)
+(define (parse-line line-num root-dir selector line)
   (let ((link-match (irregex-search index-link-split-regex line)))
     (if (irregex-match-data? link-match)
         (let* ((path (irregex-match-substring link-match 1))
@@ -105,11 +128,11 @@
                                      maybe-username)))
           (cond
             ((is-url? path)
-              (menu-item-url username path))
+              (url-item line-num path username))
             ((is-dir? path)
               (dir-item selector path chomped-username))
             (else
-              (file-item root-dir selector path username))))
+              (file-item line-num root-dir selector path username))))
         ;; Current selector is used for info itemtype so that if type
         ;; not supported by client but still displayed then it
         ;; will just link to the page that it is being displayed on
