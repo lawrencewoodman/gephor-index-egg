@@ -48,12 +48,12 @@
                     (make-request "dir-index_empty_file" "127.0.0.1") ) )
 
 
-  (test "serve-index returns #f if an 'index' file isn't world readable"
+  (test "serve-index raises an error if an 'index' file isn't world readable"
         (list (string-intersperse '(
                 "iThis is used to test an index file that isn't world readable\t\tlocalhost\t70"
                 ".\r\n")
                 "\r\n")
-              #f)
+              '(safe-read-file "can't read file, path isn't world readable: /tmp/#t"))
         (let* ((tmpdir (create-temporary-directory))
                (request (make-request "" "127.0.0.1")))
           (create-directory (make-pathname tmpdir "dir-a"))
@@ -61,14 +61,20 @@
           (copy-file (make-pathname (list fixtures-dir "dir-index_world_readable") "index")
                      (make-pathname tmpdir "index"))
           (let ((response1 (serve-index tmpdir request))
-                (response2
-                  (begin
+                (exn
+                  (handle-exceptions ex
+                    (list (get-condition-property ex 'exn 'location)
+                          (irregex-replace/all "\/tmp\/.*?index"
+                                               (get-condition-property ex
+                                                                       'exn
+                                                                       'message)
+                                               "\/tmp/#t"))
                     ;; Make tmpdir non world readable
                     (set-file-permissions! (make-pathname tmpdir "index")
                                            (bitwise-and (file-permissions tmpdir)
                                                         (bitwise-not perm/iroth)))
                     (serve-index tmpdir request))))
-            (list response1 response2) ) ) )
+            (list response1 exn) ) ) )
 
 
   (test "serve-path/index returns false if path doesn't exist"

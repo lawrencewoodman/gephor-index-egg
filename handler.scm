@@ -39,10 +39,10 @@
              (and (file-exists? index-path)
                   ;; TODO: max-response-size for safe-read-file
                   ;; TODO: doesn't make sense, replace this
-                  (and-let* ((nex-index (safe-read-file (max-response-size)
-                                                        root-dir
-                                                        index-path))
-                             (response (process-index root-dir selector nex-index)))
+                  (let* ((nex-index (safe-read-file (max-response-size)
+                                                    root-dir
+                                                    index-path))
+                         (response (process-index root-dir selector nex-index)))
                     (apply log-info
                            "serving index"
                            (cons 'handler 'serve-index)
