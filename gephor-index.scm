@@ -18,7 +18,6 @@
         (chicken base)
         (chicken file)
         (chicken file posix)
-        (chicken format)
         (chicken irregex)
         (chicken pathname)
         (chicken string)

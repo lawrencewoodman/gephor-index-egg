@@ -17,20 +17,25 @@
 ;; Process a NEX style index file.  This describes a menu and returns a list
 ;; of menu items.
 ;; TODO: rename?
-(: process-index (string string string --> (list-of menu-item)))
+(: process-index (string string string --> (or (list-of menu-item) false)))
 (define (process-index root-dir request-selector nex-index)
   (define (parse-line-add-to-result result line-num line)
     (if (and (null? result) (string-every char-set:whitespace line))
         '()  ; Remove first blank lines
-        (cons (parse-line line-num root-dir request-selector line) result) ) )
+        (and-let* ((item (parse-line line-num root-dir request-selector line)))
+          (cons item result) ) ) )
 
-  (let* ((lines (string-split (string-trim-right nex-index
-                                                 char-set:whitespace) "\n" #t))
+  (let* ((lines (string-split (string-trim-right nex-index char-set:whitespace)
+                              "\n"
+                              #t))
          (parsed-lines
-           (do ((lines lines (cdr lines))
-                (line-num 1 (+ line-num 1))
-                (result '() (parse-line-add-to-result result line-num (car lines))))
-               ((null? lines) result))))
+           (let loop ((lines lines) (line-num 1) (result '()))
+             (if (null? lines)
+                 result
+                 (and-let* ((result (parse-line-add-to-result result
+                                                              line-num
+                                                              (car lines))))
+                   (loop (cdr lines) (add1 line-num) result))))))
     (and parsed-lines
          (reverse parsed-lines) ) ) )
 
@@ -51,38 +56,54 @@
     (irregex-match-data? url-match)))
 
 
-(define (error-index-line/invalid-url location line-num url)
-  (error 'file-item
-         (sprintf "problem processing index on line: ~A, invalid URL: ~A"
-                  line-num
-                  url) ) )
+(define (fail/log-error-invalid-url line-num username url)
+  (apply log-error
+         "problem processing index: invalid URL"
+         (cons 'line line-num)
+         (cons 'username username)
+         (cons 'url url)
+         (log-context))
+  #f)
 
-(define (error-index-line/directory-not-file location line-num path)
-  (error 'file-item
-         (sprintf "problem processing index on line: ~A, path is a directory but link doesn't have a trailing '/': ~A"
-                  line-num
-                  path) ) )
 
-(define (error-index-line/file-nonexistent location line-num path local-path)
-  (error 'file-item
-         (sprintf "problem processing index on line: ~A, path doesn't exist or unknown type: ~A"
-                  line-num
-                  path) ) )
+(define (fail/log-error-directory-not-file line-num username path local-path)
+  (apply log-error
+         "problem processing index: path is a directory but link doesn't have a trailing '/'"
+         (cons 'line line-num)
+         (cons 'username username)
+         (cons 'path path)
+         (cons 'local-path local-path)
+         (log-context))
+  #f)
 
-(define (error-index-line/path-not-safe location line-num path)
-  (error 'file-item
-         (sprintf "problem processing index on line: ~A, path isn't safe: ~A"
-                  line-num
-                  path) ) )
+
+(define (fail/log-error-file-nonexistent line-num username path local-path)
+  (apply log-error
+         "problem processing index: path doesn't exist or unknown type"
+         (cons 'line line-num)
+         (cons 'username username)
+         (cons 'path path)
+         (cons 'local-path local-path)
+         (log-context))
+  #f)
+
+
+(define (fail/log-error-path-not-safe line-num username path local-path)
+  (apply log-error
+         "problem processing index: path isn't safe"
+         (cons 'line line-num)
+         (cons 'username username)
+         (cons 'path path)
+         (cons 'local-path local-path)
+         (log-context))
+  #f)
+
 
 ;; Return a menu item from a URL
 ;; TODO: Test the error from this
 (define (url-item line-num path username)
-  (let ((item (menu-item-url username path)))
-    (if item
-        item
-        (error-index-line/invalid-url 'url-item line-num path) ) ) )
-
+  (or (menu-item-url username path)
+      (fail/log-error-invalid-url line-num username path) ) )
 
 
 ;; Return a file menu item
@@ -94,15 +115,14 @@
   (define (make-item full-path item-selector)
     (if (safe-path? root-dir full-path)
         (if (directory? full-path)
-            (error-index-line/directory-not-file 'file-item line-num path)
+            (fail/log-error-directory-not-file line-num username path full-path)
             (let ((item (menu-item-file full-path username item-selector)))
-              (if item
-                  item
-                  (error-index-line/file-nonexistent 'file-item
-                                                     line-num
-                                                     path
-                                                     full-path))))
-        (error-index-line/path-not-safe 'file-item line-num path)))
+              (or item
+                  (fail/log-error-file-nonexistent line-num
+                                                   username
+                                                   path
+                                                   full-path))))
+        (fail/log-error-path-not-safe line-num username path full-path)))
 
   (if (absolute-pathname? path)
       (let ((full-path (make-pathname root-dir (trim-path-selector path))))
@@ -111,6 +131,7 @@
                                       (trim-path-selector path)))
             (item-selector (make-pathname request-selector path)))
         (make-item full-path item-selector) ) ) )
+
 
 ;; Return a menu item menu
 (define (dir-item selector path username)

@@ -3,49 +3,72 @@
 (test-group "index"
 
 
-  (test "process-index raises an error if file path in 'index' doesn't exist"
-        '(file-item "problem processing index on line: 2, path doesn't exist or unknown type: nonexistent.txt")
-        (let ((index "hello\n=> nonexistent.txt"))
-          (handle-exceptions ex
-            (list (get-condition-property ex 'exn 'location)
-                  (get-condition-property ex 'exn 'message))
-            (menu-render (process-index fixtures-dir "dir-a" index) ) ) ) )
+  (test "process-index returns #f and logs an error if file path in 'index' doesn't exist"
+        (list #f
+              "ts=#t level=error msg=\"problem processing index: path doesn't exist or unknown type\" line=2 username=\"A missing file\" path=nonexistent.txt local-path=#t connection-id=2\n")
+        (let ((index "hello\n=> nonexistent.txt A missing file")
+              (port (open-output-string)))
+          (parameterize ((log-level 0)
+                         (log-port port)
+                         (log-context (list (cons 'connection-id 2))))
+            (list (process-index fixtures-dir "dir-a" index)
+                  (irregex-replace/all "local-path=.*?nonexistent.txt"
+                    (confirm-log-entries-valid-timestamp (get-output-string port))
+                    "local-path=#t") ) ) ) )
 
 
-  (test "process-index raises an error if an absolute path in 'index' is unsafe"
-        '(file-item "problem processing index on line: 1, path isn't safe: /../run.scm")
-        (let ((index "=> /../run.scm An unsafe absolute link\n"))
-          (handle-exceptions ex
-            (list (get-condition-property ex 'exn 'location)
-                  (get-condition-property ex 'exn 'message))
-            (menu-render (process-index fixtures-dir "dir-a" index) ) ) ) )
+  (test "process-index returns #f and logs an error if an absolute path in 'index' is unsafe"
+        (list #f
+              "ts=#t level=error msg=\"problem processing index: path isn't safe\" line=1 username=\"An unsafe absolute link\" path=/../run.scm local-path=#t connection-id=2\n")
+        (let ((index "=> /../run.scm An unsafe absolute link\n")
+              (port (open-output-string)))
+          (parameterize ((log-level 0)
+                         (log-port port)
+                         (log-context (list (cons 'connection-id 2))))
+            (list (process-index fixtures-dir "dir-a" index)
+                  (irregex-replace/all "local-path=.*?run.scm"
+                    (confirm-log-entries-valid-timestamp (get-output-string port))
+                    "local-path=#t") ) ) ) )
 
 
-  (test "process-index raises an error if a link to a directory doesn't have a trailing '/'"
-        '(file-item "problem processing index on line: 1, path is a directory but link doesn't have a trailing '/': dir-ba")
-        (let ((index "=> dir-ba This is actually a directory"))
-          (handle-exceptions ex
-            (list (get-condition-property ex 'exn 'location)
-                  (get-condition-property ex 'exn 'message))
-            (menu-render (process-index fixtures-dir "dir-b" index) ) ) ) )
+  (test "process-index returns #f and logs an error if a link to a directory doesn't have a trailing '/'"
+        (list #f
+              "ts=#t level=error msg=\"problem processing index: path is a directory but link doesn't have a trailing '/'\" line=1 username=\"This is actually a directory\" path=dir-ba local-path=#t connection-id=2\n")
+        (let ((index "=> dir-ba This is actually a directory")
+              (port (open-output-string)))
+          (parameterize ((log-level 0)
+                         (log-port port)
+                         (log-context (list (cons 'connection-id 2))))
+            (list (process-index fixtures-dir "dir-b" index)
+                  (irregex-replace/all "local-path=.*?dir-ba"
+                    (confirm-log-entries-valid-timestamp (get-output-string port))
+                    "local-path=#t") ) ) ) )
 
 
-  (test "process-index raises an an error if a relative link in 'index' is unsafe"
-        '(file-item "problem processing index on line: 1, path isn't safe: ../run.scm")
-        (let ((index "=> ../run.scm An unsafe relative link"))
-          (handle-exceptions ex
-            (list (get-condition-property ex 'exn 'location)
-                  (get-condition-property ex 'exn 'message))
-            (menu-render (process-index fixtures-dir "dir-a" index) ) ) ) )
+
+  (test "process-index returns #f and logs an error if a relative link in 'index' is unsafe"
+        (list #f
+              "ts=#t level=error msg=\"problem processing index: path isn't safe\" line=1 username=\"An unsafe relative link\" path=../run.scm local-path=#t connection-id=2\n")
+        (let ((index "=> ../run.scm An unsafe relative link")
+              (port (open-output-string)))
+          (parameterize ((log-level 0)
+                         (log-port port)
+                         (log-context (list (cons 'connection-id 2))))
+            (list (process-index fixtures-dir "dir-b" index)
+                  (irregex-replace/all "local-path=.*?run.scm"
+                    (confirm-log-entries-valid-timestamp (get-output-string port))
+                    "local-path=#t") ) ) ) )
 
 
-  (test "process-index returns partial processed index and logs an error if a URL is invalid"
-        '(file-item "problem processing index on line: 1, invalid URL: telnet://example.com/fred")
+  (test "process-index returns #f and logs an error if a URL is invalid"
+        (list #f
+              "ts=#t level=error msg=\"problem processing index: invalid URL\" line=1 username=\"telnet to example\" url=telnet://example.com/fred connection-id=2\n")
         (let ((index "=> telnet://example.com/fred telnet to example"))
-          (handle-exceptions ex
-            (list (get-condition-property ex 'exn 'location)
-                  (get-condition-property ex 'exn 'message))
-            (menu-render (process-index fixtures-dir "dir-a" index) ) ) ) )
+          (parameterize ((log-level 0)
+                         (log-port (open-output-string))
+                         (log-context (list (cons 'connection-id 2))))
+            (list (process-index fixtures-dir "dir-a" index)
+                  (confirm-log-entries-valid-timestamp (get-output-string (log-port)) ) ) ) ) )
 
 
   (test "process-index removes blank lines at top and bottom of index"
