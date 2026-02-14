@@ -3,88 +3,49 @@
 (test-group "index"
 
 
-  (test "process-index returns partially processed index and logs an error if file in 'index' doesn't exist"
-        (list
-          "ihello\tdir-a\tlocalhost\t70\r\n.\r\n"
-          (sprintf "ts=#t level=error msg=\"problem processing index: file doesn't exist or unknown type\" line=2 path=nonexistent.txt local-path=~A connection-id=2\n"
-                   (make-pathname fixtures-dir "dir-a/nonexistent.txt")))
-        (let ((index "hello\n=> nonexistent.txt")
-              (port (open-output-string)))
-          (parameterize ((log-level 0)
-                         (log-port port)
-                         (log-context (list (cons 'connection-id 2))))
-            (list (menu-render (process-index fixtures-dir "dir-a" index))
-                  (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
+  (test "process-index raises an error if file path in 'index' doesn't exist"
+        '(file-item "problem processing index on line: 2, path doesn't exist or unknown type: nonexistent.txt")
+        (let ((index "hello\n=> nonexistent.txt"))
+          (handle-exceptions ex
+            (list (get-condition-property ex 'exn 'location)
+                  (get-condition-property ex 'exn 'message))
+            (menu-render (process-index fixtures-dir "dir-a" index) ) ) ) )
 
 
-  (test "process-index keeps processing after some errors and returns partially processed index"
-        (list
-          (string-intersperse '(
-            "1/unknown\tunknown\tlocalhost\t70"
-            "1unknown\tdir-a/unknown\tlocalhost\t70"
-            ".\r\n")
-            "\r\n")
-          (sprintf "ts=#t level=error msg=\"problem processing index: file doesn't exist or unknown type\" line=2 path=\/fred.txt local-path=~A connection-id=2\n"
-                   (make-pathname fixtures-dir "fred.txt")))
-        (let ((index (string-intersperse '(
-                       "=> /unknown/"
-                       "=> /fred.txt"
-                       "=> unknown/")
-                       "\n"))
-              (port (open-output-string)))
-          (parameterize ((log-level 0)
-                         (log-port port)
-                         (log-context (list (cons 'connection-id 2))))
-            (list (menu-render (process-index fixtures-dir "dir-a" index))
-                  (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
+  (test "process-index raises an error if an absolute path in 'index' is unsafe"
+        '(file-item "problem processing index on line: 1, path isn't safe: /../run.scm")
+        (let ((index "=> /../run.scm An unsafe absolute link\n"))
+          (handle-exceptions ex
+            (list (get-condition-property ex 'exn 'location)
+                  (get-condition-property ex 'exn 'message))
+            (menu-render (process-index fixtures-dir "dir-a" index) ) ) ) )
 
 
-  (test "process-index returns partially processed index and logs an error if an absolute link in 'index' is unsafe"
-        (list '()
-              "ts=#t level=error msg=\"problem processing index: path isn't safe\" line=1 path=/../run.scm connection-id=2\n")
-        (let ((index (sprintf "=> /../run.scm An unsafe absolute link\n"))
-              (port (open-output-string)))
-          (parameterize ((log-level 0)
-                         (log-port port)
-                         (log-context (list (cons 'connection-id 2))))
-            (list (process-index fixtures-dir "dir-a" index)
-                  (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
+  (test "process-index raises an error if a link to a directory doesn't have a trailing '/'"
+        '(file-item "problem processing index on line: 1, path is a directory but link doesn't have a trailing '/': dir-ba")
+        (let ((index "=> dir-ba This is actually a directory"))
+          (handle-exceptions ex
+            (list (get-condition-property ex 'exn 'location)
+                  (get-condition-property ex 'exn 'message))
+            (menu-render (process-index fixtures-dir "dir-b" index) ) ) ) )
 
 
-  (test "process-index returns partially processed index and logs a error if a link to a directory doesn't have a trailing '/'"
-        (list '()
-              "ts=#t level=error msg=\"problem processing index: path is a directory but link doesn't have a trailing /\" line=1 path=dir-ba connection-id=2\n")
-        (let ((index "=> dir-ba This is actually a directory")
-              (port (open-output-string)))
-          (parameterize ((log-level 0)
-                         (log-port port)
-                         (log-context (list (cons 'connection-id 2))))
-            (list (process-index fixtures-dir "dir-b" index)
-                  (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
-
-
-  (test "process-index returns partially processed index and logs an error if a relative link in 'index' is unsafe"
-        (list '()
-              "ts=#t level=error msg=\"problem processing index: path isn't safe\" line=1 path=../run.scm connection-id=2\n")
-        (let ((index "=> ../run.scm An unsafe relative link")
-              (port (open-output-string)))
-          (parameterize ((log-level 0)
-                         (log-port port)
-                         (log-context (list (cons 'connection-id 2))))
-            (list (process-index fixtures-dir "dir-a" index)
-                  (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
+  (test "process-index raises an an error if a relative link in 'index' is unsafe"
+        '(file-item "problem processing index on line: 1, path isn't safe: ../run.scm")
+        (let ((index "=> ../run.scm An unsafe relative link"))
+          (handle-exceptions ex
+            (list (get-condition-property ex 'exn 'location)
+                  (get-condition-property ex 'exn 'message))
+            (menu-render (process-index fixtures-dir "dir-a" index) ) ) ) )
 
 
   (test "process-index returns partial processed index and logs an error if a URL is invalid"
-        (list '()
-              "ts=#t level=error msg=\"problem processing index: invalid URL\" line=1 username=\"telnet to example\" url=telnet://example.com/fred connection-id=2\n")
-        (let ((index "=> telnet://example.com/fred telnet to example")
-              (port (open-output-string)))
-          (parameterize ((log-level 0)
-                         (log-port port)
-                         (log-context (list (cons 'connection-id 2))))
-            (list (process-index fixtures-dir "dir-a" index)
-                  (confirm-log-entries-valid-timestamp (get-output-string port) ) ) ) ) )
+        '(file-item "problem processing index on line: 1, invalid URL: telnet://example.com/fred")
+        (let ((index "=> telnet://example.com/fred telnet to example"))
+          (handle-exceptions ex
+            (list (get-condition-property ex 'exn 'location)
+                  (get-condition-property ex 'exn 'message))
+            (menu-render (process-index fixtures-dir "dir-a" index) ) ) ) )
 
 
   (test "process-index removes blank lines at top and bottom of index"

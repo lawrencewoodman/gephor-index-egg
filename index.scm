@@ -9,6 +9,7 @@
 ;;; Licensed under an MIT licence.  Please see LICENCE.md for details.
 ;;;
 
+(define-type menu-item (list string string string string fixnum))
 
 ;; Exported Definitions ------------------------------------------------------
 
@@ -16,14 +17,12 @@
 ;; Process a NEX style index file.  This describes a menu and returns a list
 ;; of menu items.
 ;; TODO: rename?
+(: process-index (string string string --> (list-of menu-item)))
 (define (process-index root-dir request-selector nex-index)
   (define (parse-line-add-to-result result line-num line)
     (if (and (null? result) (string-every char-set:whitespace line))
         '()  ; Remove first blank lines
-        (let ((item (parse-line line-num root-dir request-selector line)))
-          (if item
-              (cons item result)
-              result))))
+        (cons (parse-line line-num root-dir request-selector line) result) ) )
 
   (let* ((lines (string-split (string-trim-right nex-index
                                                  char-set:whitespace) "\n" #t))
@@ -51,50 +50,59 @@
   (let ((url-match (irregex-match url-regex path)))
     (irregex-match-data? url-match)))
 
+
+(define (error-index-line/invalid-url location line-num url)
+  (error 'file-item
+         (sprintf "problem processing index on line: ~A, invalid URL: ~A"
+                  line-num
+                  url) ) )
+
+(define (error-index-line/directory-not-file location line-num path)
+  (error 'file-item
+         (sprintf "problem processing index on line: ~A, path is a directory but link doesn't have a trailing '/': ~A"
+                  line-num
+                  path) ) )
+
+(define (error-index-line/file-nonexistent location line-num path local-path)
+  (error 'file-item
+         (sprintf "problem processing index on line: ~A, path doesn't exist or unknown type: ~A"
+                  line-num
+                  path) ) )
+
+(define (error-index-line/path-not-safe location line-num path)
+  (error 'file-item
+         (sprintf "problem processing index on line: ~A, path isn't safe: ~A"
+                  line-num
+                  path) ) )
+
 ;; Return a menu item from a URL
+;; TODO: Test the error from this
 (define (url-item line-num path username)
   (let ((item (menu-item-url username path)))
     (if item
         item
-        (begin
-          (apply log-error
-                 "problem processing index: invalid URL"
-                 (cons 'line line-num)
-                 (cons 'username username)
-                 (cons 'url path)
-                 (log-context))
-          #f))))
+        (error-index-line/invalid-url 'url-item line-num path) ) ) )
 
-;; TODO: Create a log-problem-processing-index func
+
 
 ;; Return a file menu item
+;; If the path on the => line is a directory and doesn't have a training /, it will raise an error
+;; If the path on the => line doesn't exist or is an unknown type it will raise an error
+;; If the path on the => line isn't safe it will raise an error
+(: file-item (integer string string string string --> menu-item))
 (define (file-item line-num root-dir request-selector path username)
   (define (make-item full-path item-selector)
     (if (safe-path? root-dir full-path)
         (if (directory? full-path)
-            (begin
-              (apply log-error
-                     "problem processing index: path is a directory but link doesn't have a trailing /"
-                     (cons 'line line-num)
-                     (cons 'path path)
-                     (log-context))
-              #f)
+            (error-index-line/directory-not-file 'file-item line-num path)
             (let ((item (menu-item-file full-path username item-selector)))
               (if item
                   item
-                  (begin
-                    (apply log-error "problem processing index: file doesn't exist or unknown type"
-                           (cons 'line line-num)
-                           (cons 'path path)
-                           (cons 'local-path full-path)
-                           (log-context))
-                    #f))))
-        (begin
-          (apply log-error "problem processing index: path isn't safe"
-                           (cons 'line line-num)
-                           (cons 'path path)
-                           (log-context))
-          #f) ) )
+                  (error-index-line/file-nonexistent 'file-item
+                                                     line-num
+                                                     path
+                                                     full-path))))
+        (error-index-line/path-not-safe 'file-item line-num path)))
 
   (if (absolute-pathname? path)
       (let ((full-path (make-pathname root-dir (trim-path-selector path))))
