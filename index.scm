@@ -55,48 +55,42 @@
   (let ((url-match (irregex-match url-regex path)))
     (irregex-match-data? url-match)))
 
+(define (fail/log-error msg line-num username . args)
+  (apply log-error
+         msg
+         (cons 'line line-num)
+         (cons 'username username)
+         (append args (log-context)))
+  #f)
 
 (define (fail/log-error-invalid-url line-num username url)
-  (apply log-error
-         "problem processing index: invalid URL"
-         (cons 'line line-num)
-         (cons 'username username)
-         (cons 'url url)
-         (log-context))
-  #f)
-
+  (fail/log-error "problem processing index: invalid URL"
+                  line-num
+                  username
+                  (cons 'url url) ) )
 
 (define (fail/log-error-directory-not-file line-num username path local-path)
-  (apply log-error
-         "problem processing index: path is a directory but link doesn't have a trailing '/'"
-         (cons 'line line-num)
-         (cons 'username username)
-         (cons 'path path)
-         (cons 'local-path local-path)
-         (log-context))
-  #f)
+  (fail/log-error "problem processing index: path is a directory but link doesn't have a trailing '/'"
+                  line-num
+                  username
+                  (cons 'path path)
+                  (cons 'local-path local-path) ) )
 
 
 (define (fail/log-error-file-nonexistent line-num username path local-path)
-  (apply log-error
-         "problem processing index: path doesn't exist or unknown type"
-         (cons 'line line-num)
-         (cons 'username username)
-         (cons 'path path)
-         (cons 'local-path local-path)
-         (log-context))
-  #f)
+  (fail/log-error "problem processing index: path doesn't exist or unknown type"
+                  line-num
+                  username
+                  (cons 'path path)
+                  (cons 'local-path local-path) ) )
 
 
 (define (fail/log-error-path-not-safe line-num username path local-path)
-  (apply log-error
-         "problem processing index: path isn't safe"
-         (cons 'line line-num)
-         (cons 'username username)
-         (cons 'path path)
-         (cons 'local-path local-path)
-         (log-context))
-  #f)
+  (fail/log-error "problem processing index: path isn't safe"
+                  line-num
+                  username
+                  (cons 'path path)
+                  (cons 'local-path local-path) ) )
 
 
 ;; Return a menu item from a URL
