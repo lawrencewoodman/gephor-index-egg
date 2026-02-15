@@ -107,10 +107,10 @@
 
 
 ;; Return a file menu item
-;; If the path on the => line is a directory and doesn't have a training /, it will raise an error
-;; If the path on the => line doesn't exist or is an unknown type it will raise an error
-;; If the path on the => line isn't safe it will raise an error
-(: file-item (integer string string string string --> menu-item))
+;; If the path on the => line is a directory and doesn't have a training /, it will log an error and return #f
+;; If the path on the => line doesn't exist or is an unknown type it will log an error and return #f
+;; If the path on the => line isn't safe it will log an error and return #f
+(: file-item (integer string string string string --> (or menu-item false)))
 (define (file-item line-num root-dir request-selector path username)
   (define (make-item full-path item-selector)
     (if (safe-path? root-dir full-path)

@@ -33,8 +33,8 @@
 
   (test "process-index returns #f and logs an error if a link to a directory doesn't have a trailing '/'"
         (list #f
-              "ts=#t level=error msg=\"problem processing index: path is a directory but link doesn't have a trailing '/'\" line=1 username=\"This is actually a directory\" path=dir-ba local-path=#t connection-id=2\n")
-        (let ((index "=> dir-ba This is actually a directory")
+              "ts=#t level=error msg=\"problem processing index: path is a directory but link doesn't have a trailing '/'\" line=2 username=\"This is actually a directory\" path=dir-ba local-path=#t connection-id=2\n")
+        (let ((index "before\n=> dir-ba This is actually a directory\nafter")
               (port (open-output-string)))
           (parameterize ((log-level 0)
                          (log-port port)
@@ -48,8 +48,8 @@
 
   (test "process-index returns #f and logs an error if a relative link in 'index' is unsafe"
         (list #f
-              "ts=#t level=error msg=\"problem processing index: path isn't safe\" line=1 username=\"An unsafe relative link\" path=../run.scm local-path=#t connection-id=2\n")
-        (let ((index "=> ../run.scm An unsafe relative link")
+              "ts=#t level=error msg=\"problem processing index: path isn't safe\" line=2 username=\"An unsafe relative link\" path=../run.scm local-path=#t connection-id=2\n")
+        (let ((index "before\n=> ../run.scm An unsafe relative link\nafter")
               (port (open-output-string)))
           (parameterize ((log-level 0)
                          (log-port port)
@@ -62,8 +62,8 @@
 
   (test "process-index returns #f and logs an error if a URL is invalid"
         (list #f
-              "ts=#t level=error msg=\"problem processing index: invalid URL\" line=1 username=\"telnet to example\" url=telnet://example.com/fred connection-id=2\n")
-        (let ((index "=> telnet://example.com/fred telnet to example"))
+              "ts=#t level=error msg=\"problem processing index: invalid URL\" line=2 username=\"telnet to example\" url=telnet://example.com/fred connection-id=2\n")
+        (let ((index "before\n=> telnet://example.com/fred telnet to example\nafter"))
           (parameterize ((log-level 0)
                          (log-port (open-output-string))
                          (log-context (list (cons 'connection-id 2))))
