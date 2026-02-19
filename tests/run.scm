@@ -12,10 +12,12 @@
         (chicken pathname)
         (chicken process-context)
         (chicken string)
+        datatype
         logfmt-logger
         gephor)
 
 ;; Import notes -------------------------------------------------------------
+;; datatype       - Variant records
 ;; logfmt-logger  - Logger using logfmt
 ;; gephor         - The embeddable gopher server
 
@@ -55,6 +57,14 @@
   (irregex-replace/all "ts=\\d\\d\\d\\d-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d[+-]\\d\\d\\d\\d "
                        entry
                        "ts=#t ") )
+
+
+;; Check that the symbol in log-entries matches the regex.  If it does it changes
+;; the value to #t
+(define (confirm-field-matches symbol regex log-entries)
+  (alist-update symbol
+               (irregex-match? regex (alist-ref symbol log-entries))
+               log-entries) )
 
 
 ;; Test each exported component

@@ -12,42 +12,60 @@
 ;; Exported Definitions ------------------------------------------------------
 
 ;; Tries the following handlers in turn until one returns
-;; non-false or the last one fails:
+;; Ok, Error or the last one returns Not-Applicable
 ;;   serve-index serve-path
+;;
+;; See the documentation for each handler for more information.
+;;
+;; Returns the value of the last handler tried, this will be:
+;;   Ok if everything was ok
+;;   Not-Applicable if neither of the handlers can handle the request
+;;   Error if there was a problem
 ;; Returns the value of the last handler tried.
 ;; TODO: Test
-(: serve-path/index (string * -> (or string false)))
+(: serve-path/index (string * -> *))
 (define (serve-path/index root-dir request)
-  (any (lambda (h) (h root-dir request))
-       (list serve-index serve-path) ) )
+  (let ((response (serve-index root-dir request)))
+    (cases Result response
+      (Ok () response)
+      (Not-Applicable () (serve-path root-dir request))
+      (Error () response) ) ) )
 
 
 ;; If an 'index' file is in the directory formed from root-dir and request
 ;; process the index file and return the result.
 ;; See selector->local-path in gephor egg for more information about
 ;; selector requirements.
-;; Returns #f if index file doesn't exist or can't be processed properly.
-(: serve-index (string * -> (or string false)))
+;;
+;; Returns the value of the last handler tried, this will be:
+;;   Ok if everything was ok this will contain the result of processing index
+;;   Not-Applicable if their isn't an index file or the path isn't a directory
+;;   Error if there was a problem
+(: serve-index (string * -> *))
 (define (serve-index root-dir request)
-  (let ((selector (request-selector request))
-        (client-address (request-client-address request)))
-    ;; local-path is formed here rather than being passed in to ensure that it
-    ;; is formed safely
-    (and-let* ((local-path (selector->local-path root-dir selector)))
-      (and (directory? local-path)
-           (let ((index-path (make-pathname local-path "index")))
-             (and (file-exists? index-path)
+  ;; local-path is formed here rather than being passed in to ensure that it
+  ;; is formed safely
+  (let* ((selector (request-selector request))
+         (client-address (request-client-address request))
+         (rlocal-path (selector->local-path root-dir selector)))
+    (cases Result rlocal-path
+      (Ok (local-path)
+        (if (directory? local-path)
+            (let ((index-path (make-pathname local-path "index")))
+              (if (file-exists? index-path)
                   ;; TODO: max-response-size for safe-read-file
                   ;; TODO: doesn't make sense, replace this
                   ;; TODO: This needs testing if either fail
-                  (and-let* ((nex-index (safe-read-file (max-response-size)
-                                                        root-dir
-                                                        index-path))
-                             (response (process-index root-dir selector nex-index)))
-                    (apply log-info
-                           "serving index"
-                           (cons 'handler 'serve-index)
-                           (cons 'index-path index-path)
-                           (log-context))
-                    (menu-render response) ) ) ) ) ) ) )
+                  (let ((rnex-index (safe-read-file (max-response-size)
+                                                    root-dir
+                                                    index-path)))
+                    (cases Result rnex-index
+                      (Ok (nex-index)
+                        (Ok (menu-render (process-index root-dir
+                                                        selector
+                                                        nex-index))))
+                      (Error () rnex-index)))
+                  (Not-Applicable #t)))
+            (Not-Applicable #t)))
+      (Error () rlocal-path) ) ) )
 

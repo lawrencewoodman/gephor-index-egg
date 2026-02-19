@@ -63,6 +63,7 @@
          (append args (log-context)))
   #f)
 
+; TODO: Remove these fail/log lines as we switch to Result
 (define (fail/log-error-invalid-url line-num username url)
   (fail/log-error "problem processing index: invalid URL"
                   line-num
