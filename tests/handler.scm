@@ -60,12 +60,12 @@
                     (serve-index tmpdir request))))
             (list (cases Result response1
                     (Ok (v) v)
-                    (Error () #f))
+                    (else #f))
                   (cases Result response2
-                    (Ok () #f)
                     (Error (msg log-entries)
                       (list msg
-                            (confirm-field-matches 'file "/tmp.*?index$" log-entries) ) ) ) ) ) ) )
+                            (confirm-field-matches 'file "/tmp.*?index$" log-entries)))
+                    (else #f) ) ) ) ) )
 
 
   (test "serve-path/index Not-Applicable if path doesn't exist"

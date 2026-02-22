@@ -16,28 +16,32 @@
 
 ;; Process a NEX style index file.  This describes a menu and returns a list
 ;; of menu items.
+;;
+;; Returns:
+;;   Ok if everything was ok
+;;   Error if their was a problem
 ;; TODO: rename?
-(: process-index (string string string --> (or (list-of menu-item) false)))
+(: process-index (string string string --> *))
 (define (process-index root-dir request-selector nex-index)
-  (define (parse-line-add-to-result result line-num line)
-    (if (and (null? result) (string-every char-set:whitespace line))
-        '()  ; Remove first blank lines
-        (and-let* ((item (parse-line line-num root-dir request-selector line)))
-          (cons item result) ) ) )
+  (define (strip-initial-blank-lines lines)
+    (if (null? lines)
+        '()
+        (if (string-every char-set:whitespace (car lines))
+            (strip-initial-blank-lines (cdr lines))
+            lines) ) )
 
-  (let* ((lines (string-split (string-trim-right nex-index char-set:whitespace)
-                              "\n"
-                              #t))
-         (parsed-lines
-           (let loop ((lines lines) (line-num 1) (result '()))
-             (if (null? lines)
-                 result
-                 (and-let* ((result (parse-line-add-to-result result
-                                                              line-num
-                                                              (car lines))))
-                   (loop (cdr lines) (add1 line-num) result))))))
-    (and parsed-lines
-         (reverse parsed-lines) ) ) )
+  (let* ((lines (string-split
+                   (string-trim-right nex-index char-set:whitespace) "\n" #t))
+         (slines (strip-initial-blank-lines lines))
+         (first-non-blank-line (add1 (- (length lines) (length slines)))))
+    (let loop ((lines slines) (line-num first-non-blank-line) (plines '()))
+      (if (null? lines)
+          (Ok (reverse plines))
+          (let* ((line (car lines))
+                 (item (parse-line line-num root-dir request-selector line)))
+            (cases Result item
+                   (Ok (v) (loop (cdr lines) (add1 line-num) (cons v plines)))
+                   (else item) ) ) ) ) ) )
 
 
 ;; Internal Definitions ------------------------------------------------------
@@ -55,69 +59,73 @@
   (let ((url-match (irregex-match url-regex path)))
     (irregex-match-data? url-match)))
 
-(define (fail/log-error msg line-num username . args)
-  (apply log-error
-         msg
-         (cons 'line line-num)
-         (cons 'username username)
-         (append args (log-context)))
-  #f)
+(define (Error-invalid-url line-num username url)
+  (Error "problem processing index: invalid URL"
+         (list (cons 'line line-num)
+               (cons 'username username)
+               (cons 'url url) ) ) )
 
-; TODO: Remove these fail/log lines as we switch to Result
-(define (fail/log-error-invalid-url line-num username url)
-  (fail/log-error "problem processing index: invalid URL"
-                  line-num
-                  username
-                  (cons 'url url) ) )
+;; TODO: should path be renamed to link in the Error- funcs below?
 
-(define (fail/log-error-directory-not-file line-num username path local-path)
-  (fail/log-error "problem processing index: path is a directory but link doesn't have a trailing '/'"
-                  line-num
-                  username
-                  (cons 'path path)
-                  (cons 'local-path local-path) ) )
+(define (Error-directory-not-file line-num username path local-path)
+  (Error "problem processing index: path is a directory but link doesn't have a trailing '/'"
+         (list (cons 'line line-num)
+               (cons 'username username)
+               (cons 'path path)
+               (cons 'local-path local-path) ) ) )
 
 
-(define (fail/log-error-file-nonexistent line-num username path local-path)
-  (fail/log-error "problem processing index: path doesn't exist or unknown type"
-                  line-num
-                  username
-                  (cons 'path path)
-                  (cons 'local-path local-path) ) )
+; TODO: Think about this should the error come from menu-file?
+(define (Error-file-nonexistent line-num username path local-path)
+  (Error "problem processing index: path doesn't exist or unknown type"
+         (list (cons 'line line-num)
+               (cons 'username username)
+               (cons 'path path)
+               (cons 'local-path local-path) ) ) )
 
 
-(define (fail/log-error-path-not-safe line-num username path local-path)
-  (fail/log-error "problem processing index: path isn't safe"
-                  line-num
-                  username
-                  (cons 'path path)
-                  (cons 'local-path local-path) ) )
+(define (Error-path-not-safe line-num username path local-path)
+  (Error "problem processing index: path isn't safe"
+         (list (cons 'line line-num)
+               (cons 'username username)
+               (cons 'path path)
+               (cons 'local-path local-path) ) ) )
 
 
 ;; Return a menu item from a URL
 ;; TODO: Test the error from this
+;;
+;; Returns:
+;;   Ok with a menu item
+;;   Error if the URL is invalid
 (define (url-item line-num path username)
-  (or (menu-item-url username path)
-      (fail/log-error-invalid-url line-num username path) ) )
+  (let ((item (menu-item-url username path)))
+    (if item
+        (Ok item)
+        (Error-invalid-url line-num username path) ) ) )
 
 
 ;; Return a file menu item
-;; If the path on the => line is a directory and doesn't have a training /, it will log an error and return #f
-;; If the path on the => line doesn't exist or is an unknown type it will log an error and return #f
-;; If the path on the => line isn't safe it will log an error and return #f
-(: file-item (integer string string string string --> (or menu-item false)))
+;; TODO: Test the error from this
+;; Returns:
+;;   Ok with a menu item pointing to the file
+;;   Error if the path on the => line is a directory and doesn't have a training /
+;;   Error if the path on the => line doesn't exist or is an unknown type
+;;   Error if the path on the => line isn't safe
+(: file-item (integer string string string string --> *))
 (define (file-item line-num root-dir request-selector path username)
   (define (make-item full-path item-selector)
     (if (safe-path? root-dir full-path)
         (if (directory? full-path)
-            (fail/log-error-directory-not-file line-num username path full-path)
+            (Error-directory-not-file line-num username path full-path)
             (let ((item (menu-item-file full-path username item-selector)))
-              (or item
-                  (fail/log-error-file-nonexistent line-num
-                                                   username
-                                                   path
-                                                   full-path))))
-        (fail/log-error-path-not-safe line-num username path full-path)))
+              (if item
+                  (Ok item)
+                  (Error-file-nonexistent line-num
+                                          username
+                                          path
+                                          full-path))))
+        (Error-path-not-safe line-num username path full-path)))
 
   (if (absolute-pathname? path)
       (let ((full-path (make-pathname root-dir (trim-path-selector path))))
@@ -129,13 +137,21 @@
 
 
 ;; Return a menu item menu
+;;
+;; Returns:
+;;   Ok with a menu item pointing to the directory
 (define (dir-item selector path username)
   (let ((item-selector (if (absolute-pathname? path)
                            (trim-path-selector path)
                            (make-pathname selector (string-chomp path "/")))))
-    (menu-item 'menu username item-selector (server-hostname) (server-port) ) ) )
+    (Ok (menu-item 'menu username item-selector (server-hostname) (server-port) ) ) ) )
+
 
 ;; Parse an index line and return a menu item
+;;
+;; Returns:
+;;   Ok with a menu item
+;;   Error if the there is a problem
 (define (parse-line line-num root-dir selector line)
   (let ((link-match (irregex-search index-link-split-regex line)))
     (if (irregex-match-data? link-match)
@@ -160,4 +176,4 @@
         ;; Current selector is used for info itemtype so that if type
         ;; not supported by client but still displayed then it
         ;; will just link to the page that it is being displayed on
-        (menu-item 'info line selector (server-hostname) (server-port) ) ) ) )
+        (Ok (menu-item 'info line selector (server-hostname) (server-port) ) ) ) ) )

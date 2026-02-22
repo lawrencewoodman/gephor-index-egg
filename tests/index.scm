@@ -3,72 +3,69 @@
 (test-group "index"
 
 
-  (test "process-index returns #f and logs an error if file path in 'index' doesn't exist"
-        (list #f
-              "ts=#t level=error msg=\"problem processing index: path doesn't exist or unknown type\" line=2 username=\"A missing file\" path=nonexistent.txt local-path=#t connection-id=2\n")
-        (let ((index "hello\n=> nonexistent.txt A missing file")
-              (port (open-output-string)))
-          (parameterize ((log-level 0)
-                         (log-port port)
-                         (log-context (list (cons 'connection-id 2))))
-            (list (process-index fixtures-dir "dir-a" index)
-                  (irregex-replace/all "local-path=.*?nonexistent.txt"
-                    (confirm-log-entries-valid-timestamp (get-output-string port))
-                    "local-path=#t") ) ) ) )
+  (test "process-index returns Error if file path in 'index' doesn't exist"
+        '("problem processing index: path doesn't exist or unknown type"
+          ((line . 2) (username . "A missing file") (path . "nonexistent.txt")
+           (local-path . #t)))
+        (let ((index "hello\n=> nonexistent.txt A missing file"))
+            (cases Result (process-index fixtures-dir "dir-a" index)
+                   (Error (msg log-entries)
+                          (list msg
+                                (confirm-field-matches 'local-path
+                                                       ".*?nonexistent.txt$"
+                                                       log-entries)))
+                   (else #f) ) ) )
 
 
-  (test "process-index returns #f and logs an error if an absolute path in 'index' is unsafe"
-        (list #f
-              "ts=#t level=error msg=\"problem processing index: path isn't safe\" line=1 username=\"An unsafe absolute link\" path=/../run.scm local-path=#t connection-id=2\n")
-        (let ((index "=> /../run.scm An unsafe absolute link\n")
-              (port (open-output-string)))
-          (parameterize ((log-level 0)
-                         (log-port port)
-                         (log-context (list (cons 'connection-id 2))))
-            (list (process-index fixtures-dir "dir-a" index)
-                  (irregex-replace/all "local-path=.*?run.scm"
-                    (confirm-log-entries-valid-timestamp (get-output-string port))
-                    "local-path=#t") ) ) ) )
+  (test "process-index returns Error if an absolute path in 'index' is unsafe"
+        '("problem processing index: path isn't safe"
+          ((line . 1) (username . "An unsafe absolute link") (path . "/../run.scm")
+           (local-path . #t)))
+        (let ((index "=> /../run.scm An unsafe absolute link\n"))
+            (cases Result (process-index fixtures-dir "dir-a" index)
+                   (Error (msg log-entries)
+                          (list msg
+                                (confirm-field-matches 'local-path
+                                                       ".*?run.scm$"
+                                                       log-entries)))
+                   (else #f) ) ) )
 
 
-  (test "process-index returns #f and logs an error if a link to a directory doesn't have a trailing '/'"
-        (list #f
-              "ts=#t level=error msg=\"problem processing index: path is a directory but link doesn't have a trailing '/'\" line=2 username=\"This is actually a directory\" path=dir-ba local-path=#t connection-id=2\n")
-        (let ((index "before\n=> dir-ba This is actually a directory\nafter")
-              (port (open-output-string)))
-          (parameterize ((log-level 0)
-                         (log-port port)
-                         (log-context (list (cons 'connection-id 2))))
-            (list (process-index fixtures-dir "dir-b" index)
-                  (irregex-replace/all "local-path=.*?dir-ba"
-                    (confirm-log-entries-valid-timestamp (get-output-string port))
-                    "local-path=#t") ) ) ) )
+  (test "process-index returns Error if a link to a directory doesn't have a trailing '/'"
+        '("problem processing index: path is a directory but link doesn't have a trailing '/'"
+          ((line . 2) (username . "This is actually a directory") (path . "dir-ba")
+           (local-path . #t)))
+        (let ((index "before\n=> dir-ba This is actually a directory\nafter"))
+            (cases Result (process-index fixtures-dir "dir-b" index)
+                   (Error (msg log-entries)
+                          (list msg
+                                (confirm-field-matches 'local-path
+                                                       ".*?dir-ba$"
+                                                       log-entries)))
+                   (else #f) ) ) )
 
 
+  (test "process-index returns Error if a relative link in 'index' is unsafe"
+        '("problem processing index: path isn't safe"
+          ((line . 2) (username . "An unsafe relative link") (path . "../run.scm")
+           (local-path . #t)))
+        (let ((index "before\n=> ../run.scm An unsafe relative link\nafter"))
+            (cases Result (process-index fixtures-dir "dir-b" index)
+                   (Error (msg log-entries)
+                          (list msg
+                                (confirm-field-matches 'local-path
+                                                       ".*?run.scm$"
+                                                       log-entries)))
+                   (else #f) ) ) )
 
-  (test "process-index returns #f and logs an error if a relative link in 'index' is unsafe"
-        (list #f
-              "ts=#t level=error msg=\"problem processing index: path isn't safe\" line=2 username=\"An unsafe relative link\" path=../run.scm local-path=#t connection-id=2\n")
-        (let ((index "before\n=> ../run.scm An unsafe relative link\nafter")
-              (port (open-output-string)))
-          (parameterize ((log-level 0)
-                         (log-port port)
-                         (log-context (list (cons 'connection-id 2))))
-            (list (process-index fixtures-dir "dir-b" index)
-                  (irregex-replace/all "local-path=.*?run.scm"
-                    (confirm-log-entries-valid-timestamp (get-output-string port))
-                    "local-path=#t") ) ) ) )
 
-
-  (test "process-index returns #f and logs an error if a URL is invalid"
-        (list #f
-              "ts=#t level=error msg=\"problem processing index: invalid URL\" line=2 username=\"telnet to example\" url=telnet://example.com/fred connection-id=2\n")
+  (test "process-index returns Error if a URL is invalid"
+        '("problem processing index: invalid URL"
+          ((line . 2) (username . "telnet to example") (url . "telnet://example.com/fred")))
         (let ((index "before\n=> telnet://example.com/fred telnet to example\nafter"))
-          (parameterize ((log-level 0)
-                         (log-port (open-output-string))
-                         (log-context (list (cons 'connection-id 2))))
-            (list (process-index fixtures-dir "dir-a" index)
-                  (confirm-log-entries-valid-timestamp (get-output-string (log-port)) ) ) ) ) )
+            (cases Result (process-index fixtures-dir "dir-a" index)
+                   (Error (msg log-entries) (list msg log-entries))
+                   (else #f) ) ) )
 
 
   (test "process-index removes blank lines at top and bottom of index"
@@ -83,7 +80,9 @@
                        ""
                        "")
                        "\n")))
-          (menu-render (process-index fixtures-dir "dir-a" index) ) ) )
+          (cases Result (process-index fixtures-dir "dir-a" index)
+                 (Ok (v) (menu-render v))
+                 (else #f) ) ) )
 
 
   (test "process-index doesn't remove initial whitespace of first non blank line"
@@ -96,7 +95,18 @@
                        ""
                        "   This line has a few spaces at the start and two blanks lines before it")
                        "\n")))
-          (menu-render (process-index fixtures-dir "dir-a" index) ) ) )
+          (cases Result (process-index fixtures-dir "dir-a" index)
+                 (Ok (v) (menu-render v))
+                 (else #f) ) ) )
+
+
+  (test "process-index counts lines properly when there are initial blank lines if there is an error"
+        '("problem processing index: invalid URL"
+          ((line . 4) (username . "telnet to example") (url . "telnet://example.com/fred")))
+        (let ((index "\n  \nbefore\n=> telnet://example.com/fred telnet to example\nafter"))
+            (cases Result (process-index fixtures-dir "dir-a" index)
+                   (Error (msg log-entries) (list msg log-entries))
+                   (else #f) ) ) )
 
 
   (test "process-index only recognizes links where => is at the beginning of the line"
@@ -109,7 +119,9 @@
                        "=> / A link with => starting at the beginning of the line"
                        " => / This isn't a link because => doesn't start at the beginning of the line")
                        "\n")))
-          (menu-render (process-index fixtures-dir "dir-a" index) ) ) )
+          (cases Result (process-index fixtures-dir "dir-a" index)
+                 (Ok (v) (menu-render v))
+                 (else #f) ) ) )
 
 
   (test "process-index supports absolute links"
@@ -128,7 +140,9 @@
                        "=>     /dir-a/    Lots of white space (will be removed)    "
                        "=>     /b.txt     Lots of white space (will be removed)    ")
                        "\n")))
-          (menu-render (process-index fixtures-dir "dir-a" index) ) ) )
+          (cases Result (process-index fixtures-dir "dir-a" index)
+                 (Ok (v) (menu-render v))
+                 (else #f) ) ) )
 
 
   (test "process-index supports relative links"
@@ -152,7 +166,9 @@
                        "=>     dir-ba/baa.txt     Lots of white space (will be removed)    ")
                        "\n")))
 
-          (menu-render (process-index fixtures-dir "dir-b" index) ) ) )
+          (cases Result (process-index fixtures-dir "dir-b" index)
+                 (Ok (v) (menu-render v))
+                 (else #f) ) ) )
 
 
   (test "process-index supports links to directories that don't exist as long as the link ends with '/'"
@@ -165,7 +181,9 @@
                        "=> /unknown/"
                        "=> unknown/")
                        "\n")))
-          (menu-render (process-index fixtures-dir "dir-a" index) ) ) )
+          (cases Result (process-index fixtures-dir "dir-a" index)
+                 (Ok (v) (menu-render v))
+                 (else #f) ) ) )
 
 
   (test "process-index uses '/' as the username for a link with this path that doesn't specify a username"
@@ -176,7 +194,9 @@
         (let ((index (string-intersperse '(
                        "=> /"
                        "\n"))))
-          (menu-render (process-index fixtures-dir "" index) ) ) )
+          (cases Result (process-index fixtures-dir "" index)
+                 (Ok (v) (menu-render v))
+                 (else #f) ) ) )
 
 
   (test "process-index supports URL links"
@@ -195,7 +215,9 @@
                        "=> http://example.com/fred Fred's things"
                        "=> http://example.com/fred      Lots of white space (will be removed)   ")
                        "\n")))
-          (menu-render (process-index fixtures-dir "dir-b" index) ) ) )
+          (cases Result (process-index fixtures-dir "dir-b" index)
+                 (Ok (v) (menu-render v))
+                 (else #f) ) ) )
 
 
   (test "process-index supports URL links with a ':' in path"
@@ -204,7 +226,9 @@
           ".\r\n")
           "\r\n")
         (let ((index "=> https://example.com/http://old.example.com/ Old Example"))
-          (menu-render (process-index fixtures-dir "dir-a" index) ) ) )
+          (cases Result (process-index fixtures-dir "dir-a" index)
+                 (Ok (v) (menu-render v))
+                 (else #f) ) ) )
 
 
 

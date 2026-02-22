@@ -27,9 +27,8 @@
 (define (serve-path/index root-dir request)
   (let ((response (serve-index root-dir request)))
     (cases Result response
-      (Ok () response)
       (Not-Applicable () (serve-path root-dir request))
-      (Error () response) ) ) )
+      (else response) ) ) )
 
 
 ;; If an 'index' file is in the directory formed from root-dir and request
@@ -61,11 +60,12 @@
                                                     index-path)))
                     (cases Result rnex-index
                       (Ok (nex-index)
-                        (Ok (menu-render (process-index root-dir
-                                                        selector
-                                                        nex-index))))
-                      (Error () rnex-index)))
+                        (let ((menu (process-index root-dir selector nex-index)))
+                          (cases Result menu
+                            (Ok (v) (Ok (menu-render v)))
+                            (else menu))))
+                      (else rnex-index)))
                   (Not-Applicable #t)))
             (Not-Applicable #t)))
-      (Error () rlocal-path) ) ) )
+      (else rlocal-path) ) ) )
 
