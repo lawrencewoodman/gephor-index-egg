@@ -37,35 +37,15 @@
                                                  "127.0.0.1") ) )
 
 
-  (test "serve-index returns Error if an 'index' file isn't world readable"
-        (list (string-intersperse '(
-                "iThis is used to test an index file that isn't world readable\t\tlocalhost\t70"
-                ".\r\n")
-                "\r\n")
-              '("can't read file, file path isn't world readable"
-                ((file . #t))))
-        (let* ((tmpdir (create-temporary-directory))
-               (request (make-request "" "127.0.0.1")))
-          (create-directory (make-pathname tmpdir "dir-a"))
-          (create-directory (make-pathname tmpdir "dir-b"))
-          (copy-file (make-pathname (list fixtures-dir "dir-index_world_readable") "index")
-                     (make-pathname tmpdir "index"))
-          (let ((response1 (serve-index tmpdir request))
-                (response2
-                  (begin
-                    ;; Make tmpdir non world readable
-                    (set-file-permissions! (make-pathname tmpdir "index")
-                                           (bitwise-and (file-permissions tmpdir)
-                                                        (bitwise-not perm/iroth)))
-                    (serve-index tmpdir request))))
-            (list (cases Result response1
-                    (Ok (v) v)
-                    (else #f))
-                  (cases Result response2
-                    (Error (msg log-entries)
-                      (list msg
-                            (confirm-field-matches 'file "/tmp.*?index$" log-entries)))
-                    (else #f) ) ) ) ) )
+  (test "serve-index raises an error if an 'index' file isn't readable"
+        (list 'safe-read-file
+              (sprintf "can't read file, file is too big: ~A"
+                        (make-pathname fixtures-dir "dir-b/index")))
+        (handle-exceptions ex
+          (list (get-condition-property ex 'exn 'location)
+                (get-condition-property ex 'exn 'message))
+          (parameterize ((max-response-size 5))
+            (serve-index fixtures-dir (make-request "dir-b" "127.0.0.1") ) ) ) )
 
 
   (test "serve-path/index Not-Applicable if path doesn't exist"

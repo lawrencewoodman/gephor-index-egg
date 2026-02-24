@@ -4,7 +4,7 @@
 ;;; From this file the following are exported:
 ;;;   serve-index serve-path/index
 ;;;
-;;; Copyright (C) 2025 Lawrence Woodman <https://lawrencewoodman.github.io/>
+;;; Copyright (C) 2026 Lawrence Woodman <https://lawrencewoodman.github.io/>
 ;;;
 ;;; Licensed under an MIT licence.  Please see LICENCE.md for details.
 ;;;
@@ -55,16 +55,13 @@
                   ;; TODO: max-response-size for safe-read-file
                   ;; TODO: doesn't make sense, replace this
                   ;; TODO: This needs testing if either fail
-                  (let ((rnex-index (safe-read-file (max-response-size)
-                                                    root-dir
-                                                    index-path)))
-                    (cases Result rnex-index
-                      (Ok (nex-index)
-                        (let ((menu (process-index root-dir selector nex-index)))
-                          (cases Result menu
-                            (Ok (v) (Ok (menu-render v)))
-                            (else menu))))
-                      (else rnex-index)))
+                  (let* ((index (safe-read-file (max-response-size)
+                                                root-dir
+                                                index-path))
+                         (menu (process-index root-dir selector index)))
+                    (cases Result menu
+                           (Ok (v) (Ok (menu-render v)))
+                           (else menu)))
                   (Not-Applicable #t)))
             (Not-Applicable #t)))
       (else rlocal-path) ) ) )
