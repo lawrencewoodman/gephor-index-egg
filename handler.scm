@@ -24,8 +24,8 @@
 ;; TODO: Test
 (: serve-path/index (string * -> (or string false)))
 (define (serve-path/index root-dir request)
-  (and (serve-index root-dir request)
-       (serve-path root-dir request) ) )
+  (or (serve-index root-dir request)
+      (serve-path root-dir request) ) )
 
 
 ;; If an 'index' file is in the directory formed from root-dir and request
@@ -48,12 +48,12 @@
     (and local-path
          (directory? local-path)
            (let ((index-path (make-pathname local-path "index")))
-             (if (file-exists? index-path)
-                 ;; TODO: max-response-size for safe-read-file
-                 ;; TODO: doesn't make sense, replace this
-                 ;; TODO: This needs testing if either fail
-                 (let ((index (safe-read-file (max-response-size)
-                                              root-dir
-                                              index-path)))
-                   (menu-render (process-index root-dir selector index) ) ) ) ) ) ) )
+             (and (file-exists? index-path)
+                  ;; TODO: max-response-size for safe-read-file
+                  ;; TODO: doesn't make sense, replace this
+                  ;; TODO: This needs testing if either fail
+                  (let ((index (safe-read-file (max-response-size)
+                                               root-dir
+                                               index-path)))
+                    (menu-render (process-index root-dir selector index) ) ) ) ) ) ) )
 
