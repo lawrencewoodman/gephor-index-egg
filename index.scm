@@ -18,9 +18,11 @@
 ;; of menu items.
 ;;
 ;; Returns:
-;;   Ok if everything was ok
-;;   Error if their was a problem
+;;   The index file convert to a menu
+;; Raises an error:
+;;   If there was a problem
 ;; TODO: rename?
+;; TODO: Update the return type
 (: process-index (string string string --> *))
 (define (process-index root-dir request-selector nex-index)
   (define (strip-initial-blank-lines lines)
@@ -36,12 +38,10 @@
          (first-non-blank-line (add1 (- (length lines) (length slines)))))
     (let loop ((lines slines) (line-num first-non-blank-line) (plines '()))
       (if (null? lines)
-          (Ok (reverse plines))
+          (reverse plines)
           (let* ((line (car lines))
                  (item (parse-line line-num root-dir request-selector line)))
-            (cases Result item
-                   (Ok (v) (loop (cdr lines) (add1 line-num) (cons v plines)))
-                   (else item) ) ) ) ) ) )
+            (loop (cdr lines) (add1 line-num) (cons item plines) ) ) ) ) ) )
 
 
 ;; Internal Definitions ------------------------------------------------------
@@ -59,73 +59,49 @@
   (let ((url-match (irregex-match url-regex path)))
     (irregex-match-data? url-match)))
 
-(define (Error-invalid-url line-num username url)
-  (Error "problem processing index: invalid URL"
-         (list (cons 'line line-num)
-               (cons 'username username)
-               (cons 'url url) ) ) )
-
-;; TODO: should path be renamed to link in the Error- funcs below?
-
-(define (Error-directory-not-file line-num username path local-path)
-  (Error "problem processing index: path is a directory but link doesn't have a trailing '/'"
-         (list (cons 'line line-num)
-               (cons 'username username)
-               (cons 'path path)
-               (cons 'local-path local-path) ) ) )
-
-
-; TODO: Think about this should the error come from menu-file?
-(define (Error-file-nonexistent line-num username path local-path)
-  (Error "problem processing index: path doesn't exist or unknown type"
-         (list (cons 'line line-num)
-               (cons 'username username)
-               (cons 'path path)
-               (cons 'local-path local-path) ) ) )
-
-
-(define (Error-path-not-safe line-num username path local-path)
-  (Error "problem processing index: path isn't safe"
-         (list (cons 'line line-num)
-               (cons 'username username)
-               (cons 'path path)
-               (cons 'local-path local-path) ) ) )
-
 
 ;; Return a menu item from a URL
 ;; TODO: Test the error from this
 ;;
 ;; Returns:
-;;   Ok with a menu item
-;;   Error if the URL is invalid
+;;   The URL as a menu item
+;; Raises an error:
+;;   If the URL is invalid
 (define (url-item line-num path username)
   (let ((item (menu-item-url username path)))
     (if item
-        (Ok item)
-        (Error-invalid-url line-num username path) ) ) )
+        item
+        (error* 'process-index
+                "problem processing index, invalid URL, line: ~A"
+                line-num) ) ) )
 
 
 ;; Return a file menu item
 ;; TODO: Test the error from this
 ;; Returns:
-;;   Ok with a menu item pointing to the file
-;;   Error if the path on the => line is a directory and doesn't have a training /
-;;   Error if the path on the => line doesn't exist or is an unknown type
-;;   Error if the path on the => line isn't safe
+;;   A menu item pointing to the file
+;; Raises an error:
+;;   If the path on the => line is a directory and doesn't have a training /
+;;   If the path on the => line doesn't exist or is an unknown type
+;;   If the path on the => line isn't safe
+;; TODO: Update return type
 (: file-item (integer string string string string --> *))
 (define (file-item line-num root-dir request-selector path username)
   (define (make-item full-path item-selector)
     (if (safe-path? root-dir full-path)
         (if (directory? full-path)
-            (Error-directory-not-file line-num username path full-path)
+            (error* 'process-index
+                    "problem processing index, path is a directory but link doesn't have a trailing '/', line: ~A"
+                    line-num)
             (let ((item (menu-item-file full-path username item-selector)))
               (if item
-                  (Ok item)
-                  (Error-file-nonexistent line-num
-                                          username
-                                          path
-                                          full-path))))
-        (Error-path-not-safe line-num username path full-path)))
+                  item
+                  (error* 'process-index
+                          "problem processing index, path doesn't exist or unknown type, line: ~A"
+                          line-num))))
+        (error* 'process-index
+                "problem processing index, path isn't safe, line: ~A"
+                line-num) ) )
 
   (if (absolute-pathname? path)
       (let ((full-path (make-pathname root-dir (trim-path-selector path))))
@@ -139,19 +115,20 @@
 ;; Return a menu item menu
 ;;
 ;; Returns:
-;;   Ok with a menu item pointing to the directory
+;;   A menu item pointing to the directory
 (define (dir-item selector path username)
   (let ((item-selector (if (absolute-pathname? path)
                            (trim-path-selector path)
                            (make-pathname selector (string-chomp path "/")))))
-    (Ok (menu-item 'menu username item-selector (server-hostname) (server-port) ) ) ) )
+    (menu-item 'menu username item-selector (server-hostname) (server-port) ) ) )
 
 
 ;; Parse an index line and return a menu item
 ;;
 ;; Returns:
-;;   Ok with a menu item
-;;   Error if the there is a problem
+;;   The line as a menu item
+;; Raises an error:
+;;   If the there is a problem
 (define (parse-line line-num root-dir selector line)
   (let ((link-match (irregex-search index-link-split-regex line)))
     (if (irregex-match-data? link-match)
@@ -176,4 +153,5 @@
         ;; Current selector is used for info itemtype so that if type
         ;; not supported by client but still displayed then it
         ;; will just link to the page that it is being displayed on
-        (Ok (menu-item 'info line selector (server-hostname) (server-port) ) ) ) ) )
+        (menu-item 'info line selector (server-hostname) (server-port) ) ) ) )
+

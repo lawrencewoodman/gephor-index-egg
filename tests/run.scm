@@ -12,12 +12,10 @@
         (chicken pathname)
         (chicken process-context)
         (chicken string)
-        datatype
         logfmt-logger
         gephor)
 
 ;; Import notes -------------------------------------------------------------
-;; datatype       - Variant records
 ;; logfmt-logger  - Logger using logfmt
 ;; gephor         - The embeddable gopher server
 
