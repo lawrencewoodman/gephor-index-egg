@@ -3,49 +3,58 @@
 (test-group "index"
 
 
-  (test "process-index raises an error if file path in 'index' doesn't exist"
-        '(process-index "problem processing index, path doesn't exist or unknown type, line: 2")
+  (test "process-index returns #f and logs an error if file path in 'index' doesn't exist"
+        '(#f "ts=#t level=error msg=\"problem processing index: path doesn't exist or unknown type\" line-num=2 client-address=127.0.0.1\n")
         (let ((index "hello\n=> nonexistent.txt A missing file"))
-          (handle-exceptions ex
-            (list (get-condition-property ex 'exn 'location)
-                  (get-condition-property ex 'exn 'message))
-            (process-index fixtures-dir "dir-a" index) ) ) )
+          (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
+            (run/get-log 'info
+                         (lambda () (process-index fixtures-dir "dir-a" index))
+                         confirm-log-entries-valid-timestamp) ) ) )
 
 
-  (test "process-index raises an error if an absolute path in 'index' is unsafe"
-        '(process-index "problem processing index, path isn't safe, line: 1")
+  (test "process-index returns #f and logs an error if an absolute path in 'index' is unsafe"
+        '(#f "ts=#t level=error msg=\"problem processing index: path isn't safe\" line-num=1 client-address=127.0.0.1\n")
         (let ((index "=> /../run.scm An unsafe absolute link\n"))
-          (handle-exceptions ex
-            (list (get-condition-property ex 'exn 'location)
-                  (get-condition-property ex 'exn 'message))
-            (process-index fixtures-dir "dir-a" index) ) ) )
+          (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
+            (run/get-log 'info
+                         (lambda () (process-index fixtures-dir "dir-a" index))
+                         confirm-log-entries-valid-timestamp) ) ) )
 
 
-  (test "process-index raises an error if a link to a directory doesn't have a trailing '/'"
-        '(process-index "problem processing index, path is a directory but link doesn't have a trailing '/', line: 2")
+  (test "process-index returns #f and logs an error if a link to a directory doesn't have a trailing '/'"
+        '(#f "ts=#t level=error msg=\"problem processing index: path is a directory but link doesn't have a trailing '/'\" line-num=2 client-address=127.0.0.1\n")
         (let ((index "before\n=> dir-ba This is actually a directory\nafter"))
-          (handle-exceptions ex
-            (list (get-condition-property ex 'exn 'location)
-                  (get-condition-property ex 'exn 'message))
-            (process-index fixtures-dir "dir-b" index) ) ) )
+          (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
+            (run/get-log 'info
+                         (lambda () (process-index fixtures-dir "dir-b" index))
+                         confirm-log-entries-valid-timestamp) ) ) )
 
 
-  (test "process-index raises an error if a relative link in 'index' is unsafe"
-        '(process-index "problem processing index, path isn't safe, line: 2")
+  (test "process-index returns #f and logs an error if a relative link in 'index' is unsafe"
+        '(#f "ts=#t level=error msg=\"problem processing index: path isn't safe\" line-num=2 client-address=127.0.0.1\n")
         (let ((index "before\n=> ../run.scm An unsafe relative link\nafter"))
-          (handle-exceptions ex
-            (list (get-condition-property ex 'exn 'location)
-                  (get-condition-property ex 'exn 'message))
-            (process-index fixtures-dir "dir-b" index) ) ) )
+          (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
+            (run/get-log 'info
+                         (lambda () (process-index fixtures-dir "dir-b" index))
+                         confirm-log-entries-valid-timestamp) ) ) )
 
 
-  (test "process-index raises an error if a URL is invalid"
-        '(process-index "problem processing index, invalid URL, line: 2")
+  (test "process-index returns #f and logs an error if a URL is invalid"
+        '(#f "ts=#t level=error msg=\"problem processing index: invalid URL\" line-num=2 client-address=127.0.0.1\n")
         (let ((index "before\n=> telnet://example.com/fred telnet to example\nafter"))
-          (handle-exceptions ex
-            (list (get-condition-property ex 'exn 'location)
-                  (get-condition-property ex 'exn 'message))
-            (process-index fixtures-dir "dir-a" index) ) ) )
+          (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
+            (run/get-log 'info
+                         (lambda () (process-index fixtures-dir "dir-a" index))
+                         confirm-log-entries-valid-timestamp) ) ) )
+
+
+  (test "process-index counts lines properly when there are initial blank lines if there is an error"
+        '(#f "ts=#t level=error msg=\"problem processing index: invalid URL\" line-num=4 client-address=127.0.0.1\n")
+        (let ((index "\n  \nbefore\n=> telnet://example.com/fred telnet to example\nafter"))
+          (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
+            (run/get-log 'info
+                         (lambda () (process-index fixtures-dir "dir-a" index))
+                         confirm-log-entries-valid-timestamp) ) ) )
 
 
   (test "process-index removes blank lines at top and bottom of index"
@@ -74,15 +83,6 @@
                        "   This line has a few spaces at the start and two blanks lines before it")
                        "\n")))
           (menu-render (process-index fixtures-dir "dir-a" index) ) ) )
-
-
-  (test "process-index counts lines properly when there are initial blank lines if there is an error"
-        '(process-index "problem processing index, invalid URL, line: 4")
-        (let ((index "\n  \nbefore\n=> telnet://example.com/fred telnet to example\nafter"))
-          (handle-exceptions ex
-            (list (get-condition-property ex 'exn 'location)
-                  (get-condition-property ex 'exn 'message))
-            (process-index fixtures-dir "dir-a" index) ) ) )
 
 
   (test "process-index only recognizes links where => is at the beginning of the line"

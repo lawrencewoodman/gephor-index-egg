@@ -37,6 +37,16 @@
                                                  "127.0.0.1") ) )
 
 
+  (test "serve-index returns #f and logs an error if 'index' file has an unsafe link"
+        '(#f "ts=#t level=error msg=\"problem processing index: path isn't safe\" line-num=3 client-address=127.0.0.1\n")
+        (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
+          (run/get-log 'info
+                       (lambda ()
+                         (serve-index fixtures-dir
+                                      (make-request "dir-index_error" "127.0.0.1")))
+                       confirm-log-entries-valid-timestamp) ) )
+
+
   (test "serve-index raises an error if an 'index' file isn't readable"
         (list 'safe-read-file
               (sprintf "can't read file, file is too big: ~A"

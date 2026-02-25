@@ -36,8 +36,8 @@
 ;; Returns:
 ;;   The index file turned into a rendered menu
 ;;   #f if the request can't be handled
-;; Raises an error:
-;;   If there is a problem
+;; Logs:
+;;   error if #f returned
 (: serve-index (string * -> (or string false)))
 (define (serve-index root-dir request)
   ;; local-path is formed here rather than being passed in to ensure that it
@@ -52,8 +52,11 @@
                   ;; TODO: max-response-size for safe-read-file
                   ;; TODO: doesn't make sense, replace this
                   ;; TODO: This needs testing if either fail
-                  (let ((index (safe-read-file (max-response-size)
-                                               root-dir
-                                               index-path)))
-                    (menu-render (process-index root-dir selector index) ) ) ) ) ) ) )
+                  (let* ((index (safe-read-file (max-response-size)
+                                                root-dir
+                                                index-path))
+                         (menu (process-index root-dir selector index)))
+                    (and menu
+                         (menu-render menu) ) ) ) ) ) ) )
+
 

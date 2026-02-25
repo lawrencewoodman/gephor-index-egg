@@ -57,12 +57,19 @@
                        "ts=#t ") )
 
 
-;; Check that the symbol in log-entries matches the regex.  If it does it changes
-;; the value to #t
-(define (confirm-field-matches symbol regex log-entries)
-  (alist-update symbol
-               (irregex-match? regex (alist-ref symbol log-entries))
-               log-entries) )
+;; Run proc and return list with two values:
+;;   The return value of proc
+;;   Any entries logged which are at log level or above after
+;;    running log-transform-proc on the log output
+;; TODO: Turn this into a macro and change name
+;; TODO: use this in gephor
+(define (run/get-log level proc log-transform-proc)
+  (parameterize ((log-level level)
+                 (log-port (open-output-string)))
+    (let* ((ret (proc))
+           (log (log-transform-proc (get-output-string (log-port)))))
+      (close-output-port (log-port))
+      (list ret log) ) ) )
 
 
 ;; Test each exported component
