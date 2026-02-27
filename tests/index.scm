@@ -8,8 +8,8 @@
         (let ((index "hello\n=> nonexistent.txt A missing file"))
           (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
             (run/get-log 'info
-                         (lambda () (process-index fixtures-dir "dir-a" index))
-                         confirm-log-entries-valid-timestamp) ) ) )
+                         confirm-log-entries-valid-timestamp
+                         (process-index fixtures-dir "dir-a" index) ) ) ) )
 
 
   (test "process-index returns #f and logs an error if an absolute path in 'index' is unsafe"
@@ -17,17 +17,16 @@
         (let ((index "=> /../run.scm An unsafe absolute link\n"))
           (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
             (run/get-log 'info
-                         (lambda () (process-index fixtures-dir "dir-a" index))
-                         confirm-log-entries-valid-timestamp) ) ) )
-
+                         confirm-log-entries-valid-timestamp
+                         (process-index fixtures-dir "dir-a" index) ) ) ) )
 
   (test "process-index returns #f and logs an error if a link to a directory doesn't have a trailing '/'"
         '(#f "ts=#t level=error msg=\"problem processing index: path is a directory but link doesn't have a trailing '/'\" line-num=2 client-address=127.0.0.1\n")
         (let ((index "before\n=> dir-ba This is actually a directory\nafter"))
           (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
             (run/get-log 'info
-                         (lambda () (process-index fixtures-dir "dir-b" index))
-                         confirm-log-entries-valid-timestamp) ) ) )
+                         confirm-log-entries-valid-timestamp
+                         (process-index fixtures-dir "dir-b" index) ) ) ) )
 
 
   (test "process-index returns #f and logs an error if a relative link in 'index' is unsafe"
@@ -35,8 +34,8 @@
         (let ((index "before\n=> ../run.scm An unsafe relative link\nafter"))
           (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
             (run/get-log 'info
-                         (lambda () (process-index fixtures-dir "dir-b" index))
-                         confirm-log-entries-valid-timestamp) ) ) )
+                         confirm-log-entries-valid-timestamp
+                         (process-index fixtures-dir "dir-b" index) ) ) ) )
 
 
   (test "process-index returns #f and logs an error if a URL is invalid"
@@ -44,8 +43,8 @@
         (let ((index "before\n=> telnet://example.com/fred telnet to example\nafter"))
           (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
             (run/get-log 'info
-                         (lambda () (process-index fixtures-dir "dir-a" index))
-                         confirm-log-entries-valid-timestamp) ) ) )
+                         confirm-log-entries-valid-timestamp
+                         (process-index fixtures-dir "dir-a" index) ) ) ) )
 
 
   (test "process-index counts lines properly when there are initial blank lines if there is an error"
@@ -53,8 +52,8 @@
         (let ((index "\n  \nbefore\n=> telnet://example.com/fred telnet to example\nafter"))
           (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
             (run/get-log 'info
-                         (lambda () (process-index fixtures-dir "dir-a" index))
-                         confirm-log-entries-valid-timestamp) ) ) )
+                         confirm-log-entries-valid-timestamp
+                         (process-index fixtures-dir "dir-a" index) ) ) ) )
 
 
   (test "process-index removes blank lines at top and bottom of index"

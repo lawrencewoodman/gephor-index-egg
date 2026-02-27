@@ -57,19 +57,19 @@
                        "ts=#t ") )
 
 
-;; Run proc and return list with two values:
-;;   The return value of proc
+;; Run expressions and return list with two values:
+;;   The return value of the last expression in body
 ;;   Any entries logged which are at log level or above after
 ;;    running log-transform-proc on the log output
-;; TODO: Turn this into a macro and change name
-;; TODO: use this in gephor
-(define (run/get-log level proc log-transform-proc)
-  (parameterize ((log-level level)
-                 (log-port (open-output-string)))
-    (let* ((ret (proc))
-           (log (log-transform-proc (get-output-string (log-port)))))
-      (close-output-port (log-port))
-      (list ret log) ) ) )
+(define-syntax run/get-log
+    (syntax-rules ()
+      ((run/get-log level log-transform-proc expr expr* ...)
+        (parameterize ((log-level level)
+                       (log-port (open-output-string)))
+          (let* ((ret (begin expr expr* ...))
+                 (log (log-transform-proc (get-output-string (log-port)))))
+            (close-output-port (log-port))
+            (list ret log) ) ) ) ) )
 
 
 ;; Test each exported component
