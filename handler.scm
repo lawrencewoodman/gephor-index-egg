@@ -21,7 +21,6 @@
 ;; Returns:
 ;;   The value of the last successful handler
 ;;   #f if the the request can't be handled
-;; TODO: Test
 (: serve-path/index (string * -> (or string false)))
 (define (serve-path/index root-dir request)
   (or (serve-index root-dir request)
