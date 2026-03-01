@@ -35,8 +35,8 @@
 ;; Returns:
 ;;   The index file turned into a rendered menu
 ;;   #f if the request can't be handled
-;; Logs:
-;;   error if #f returned
+;; Logs an error and raises an exception:
+;;   If there are some problems
 (: serve-index (string * -> (or string false)))
 (define (serve-index root-dir request)
   ;; local-path is formed here rather than being passed in to ensure that it

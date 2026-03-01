@@ -61,9 +61,11 @@
   (let ((url-match (irregex-match url-regex path)))
     (irregex-match-data? url-match)))
 
-;; Logs an error message and returns false
-(define (fail/log-error msg . args)
-  (apply log-error msg (append args (log-context))) #f)
+;; Logs an error message and raises an exception
+(: error/log-error (string #!rest (pair symbol *) ... --> undefined))
+(define (error/log-error msg . args)
+  (apply log-error msg (append args (log-context)))
+  (error* 'serve-index "problem processing index") )
 
 
 ;; Return a menu item from a URL
@@ -71,14 +73,13 @@
 ;;
 ;; Returns:
 ;;   The URL as a menu item
-;;   #f if the URL is invalid
-;; Logs:
-;;   error if #f returned
+;; Logs an error and raises an exception:
+;;   If URL is invalid
 (define (url-item line-num path username)
   (let ((item (menu-item-url username path)))
     (if item
         item
-        (fail/log-error "problem processing index: invalid URL"
+        (error/log-error "problem processing index: invalid URL"
                         (cons 'line-num line-num) ) ) ) )
 
 
@@ -86,27 +87,25 @@
 ;; TODO: Test the error from this
 ;; Returns:
 ;;   A menu item pointing to the file
-;;   #f if the path on the => line is a directory and doesn't have a training /
-;;   #f if the path on the => line doesn't exist or is an unknown type
-;;   #f if the path on the => line isn't safe
-;; Logs:
-;;   error if #f returned
-;; TODO: Update return type
-(: file-item (integer string string string string --> (or * false)))
+;; Logs an error and raises an exception:
+;;   if the path on the => line is a directory and doesn't have a training /
+;;   if the path on the => line doesn't exist or is an unknown type
+;;   if the path on the => line isn't safe
+(: file-item (integer string string string string --> *))
 (define (file-item line-num root-dir request-selector path username)
   (define (make-item full-path item-selector)
     (if (safe-path? root-dir full-path)
         (if (directory? full-path)
-            (fail/log-error "problem processing index: path is a directory but link doesn't have a trailing '/'"
-                            (cons 'line-num line-num))
+            (error/log-error "problem processing index: path is a directory but link doesn't have a trailing '/'"
+                             (cons 'line-num line-num))
             (let ((item (menu-item-file full-path username item-selector)))
               (if item
                   item
-                  (fail/log-error "problem processing index: path doesn't exist or unknown type"
-                                  (cons 'line-num line-num)))))
+                  (error/log-error "problem processing index: path doesn't exist or unknown type"
+                                   (cons 'line-num line-num)))))
 
-        (fail/log-error "problem processing index: path isn't safe"
-                        (cons 'line-num line-num) ) ) )
+        (error/log-error "problem processing index: path isn't safe"
+                         (cons 'line-num line-num) ) ) )
 
   (if (absolute-pathname? path)
       (let ((full-path (make-pathname root-dir (trim-path-selector path))))
@@ -132,9 +131,8 @@
 ;;
 ;; Returns:
 ;;   The line as a menu item
-;;   #f if there is an error
-;; Logs:
-;;   error if #f returned
+;; Logs an error and raises an exception:
+;;   If there is a problem
 (define (parse-line line-num root-dir selector line)
   (let ((link-match (irregex-search index-link-split-regex line)))
     (if (irregex-match-data? link-match)

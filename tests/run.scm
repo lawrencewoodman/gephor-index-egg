@@ -61,15 +61,22 @@
 ;;   The return value of the last expression in body
 ;;   Any entries logged which are at log level or above after
 ;;    running log-transform-proc on the log output
-(define-syntax run/get-log
-    (syntax-rules ()
-      ((run/get-log level log-transform-proc expr expr* ...)
-        (parameterize ((log-level level)
-                       (log-port (open-output-string)))
+(define-syntax run/get-log-and-exn
+  (syntax-rules ()
+    ((run/get-log level log-transform-proc expr expr* ...)
+      (parameterize ((log-level level)
+                     (log-port (open-output-string)))
+      (handle-exceptions ex
+        (let ((log (log-transform-proc (get-output-string (log-port)))))
+          (close-output-port (log-port))
+          (list #f
+                log
+                (get-condition-property ex 'exn 'location)
+                (get-condition-property ex 'exn 'message)))
           (let* ((ret (begin expr expr* ...))
                  (log (log-transform-proc (get-output-string (log-port)))))
             (close-output-port (log-port))
-            (list ret log) ) ) ) ) )
+            (list ret log #f) ) ) ) ) ) )
 
 
 ;; Test each exported component
