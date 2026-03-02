@@ -12,7 +12,6 @@ The following eggs need to be installed:
 * srfi-1
 * srfi-13
 * srfi-14
-* [logfmt-logger](https://github.com/lawrencewoodman/logfmt-logger-egg)
 * [gephor](https://github.com/lawrencewoodman/gephor-egg)
 
 
@@ -37,11 +36,6 @@ Any problems processing the index file, such as if a file doesn't exist, will be
 If displayed text on a line is greater than 69 characters a warning will be logged.
 
 
-Logging
--------
-The module uses [logfmt-logger](https://github.com/lawrencewoodman/logfmt-logger-egg) which can be configured by the calling code to decide where the logger will output and what log level will be logged.
-
-
 Testing
 -------
 There is a testsuite in `tests/`.  To run it:
@@ -51,6 +45,6 @@ There is a testsuite in `tests/`.  To run it:
 
 Licence
 -------
-Copyright (C) 2025 Lawrence Woodman <https://lawrencewoodman.github.io/>
+Copyright (C) 2025-2026 Lawrence Woodman <https://lawrencewoodman.github.io/>
 
 This software is licensed under an MIT Licence.  Please see the file, [LICENCE.md](https://github.com/lawrencewoodman/gephor-index-egg/blob/master/LICENCE.md), for details.

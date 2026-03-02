@@ -52,14 +52,10 @@
                                                  "127.0.0.1") ) )
 
 
-  (test "serve-index raises an error and logs an error if 'index' file has an unsafe link"
-        '(#f "ts=#t level=error msg=\"problem processing index: path isn't safe\" line-num=3 client-address=127.0.0.1\n" serve-index "problem processing index")
-        (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
-          (run/get-log-and-exn
-            'info
-            confirm-log-entries-valid-timestamp
-            (serve-index fixtures-dir
-                         (make-request "dir-index_error" "127.0.0.1") ) ) ) )
+  (test "serve-index raises an exception if 'index' file has an unsafe link"
+        '(#f serve-index "problem processing index at line 3: path isn't safe")
+        (run/get-exn (serve-index fixtures-dir
+                                  (make-request "dir-index_error" "127.0.0.1") ) ) )
 
 
   (test "serve-index raises an error if an 'index' file isn't readable"

@@ -35,7 +35,7 @@
 ;; Returns:
 ;;   The index file turned into a rendered menu
 ;;   #f if the request can't be handled
-;; Logs an error and raises an exception:
+;; Raises an exception:
 ;;   If there are some problems
 (: serve-index (string * -> (or string false)))
 (define (serve-index root-dir request)

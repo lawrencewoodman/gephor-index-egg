@@ -4,7 +4,7 @@
 ;;; From this file the following are exported:
 ;;;   process-index
 ;;;
-;;; Copyright (C) 2025 Lawrence Woodman <https://lawrencewoodman.github.io/>
+;;; Copyright (C) 2025-2026 Lawrence Woodman <https://lawrencewoodman.github.io/>
 ;;;
 ;;; Licensed under an MIT licence.  Please see LICENCE.md for details.
 ;;;
@@ -19,12 +19,10 @@
 ;;
 ;; Returns:
 ;;   The index file convert to a menu
-;;   #f if the URL is invalid
-;; Logs:
-;;   error if #f returned
+;; Raises an exception:
+;;   If there is a problem
 ;; TODO: rename?
-;; TODO: Update return type
-(: process-index (string string string --> (or * false)))
+(: process-index (string string string --> *))
 (define (process-index root-dir request-selector nex-index)
   (define (strip-initial-blank-lines lines)
     (if (null? lines)
@@ -61,11 +59,10 @@
   (let ((url-match (irregex-match url-regex path)))
     (irregex-match-data? url-match)))
 
-;; Logs an error message and raises an exception
-(: error/log-error (string #!rest (pair symbol *) ... --> undefined))
-(define (error/log-error msg . args)
-  (apply log-error msg (append args (log-context)))
-  (error* 'serve-index "problem processing index") )
+;; Raises an exception with the line number noted in message
+(: error-in-index (integer string --> noreturn))
+(define (error-in-index line-num msg)
+  (error* 'serve-index "problem processing index at line ~A: ~A" line-num msg) )
 
 
 ;; Return a menu item from a URL
@@ -73,21 +70,20 @@
 ;;
 ;; Returns:
 ;;   The URL as a menu item
-;; Logs an error and raises an exception:
+;; Raises an exception:
 ;;   If URL is invalid
 (define (url-item line-num path username)
   (let ((item (menu-item-url username path)))
     (if item
         item
-        (error/log-error "problem processing index: invalid URL"
-                        (cons 'line-num line-num) ) ) ) )
+        (error-in-index line-num "invalid URL") ) ) )
 
 
 ;; Return a file menu item
 ;; TODO: Test the error from this
 ;; Returns:
 ;;   A menu item pointing to the file
-;; Logs an error and raises an exception:
+;; Raises an exception:
 ;;   if the path on the => line is a directory and doesn't have a training /
 ;;   if the path on the => line doesn't exist or is an unknown type
 ;;   if the path on the => line isn't safe
@@ -96,16 +92,12 @@
   (define (make-item full-path item-selector)
     (if (safe-path? root-dir full-path)
         (if (directory? full-path)
-            (error/log-error "problem processing index: directory path missing trailing '/'"
-                             (cons 'line-num line-num))
+            (error-in-index line-num "directory path missing trailing '/'")
             (let ((item (menu-item-file full-path username item-selector)))
               (if item
                   item
-                  (error/log-error "problem processing index: path doesn't exist or unknown type"
-                                   (cons 'line-num line-num)))))
-
-        (error/log-error "problem processing index: path isn't safe"
-                         (cons 'line-num line-num) ) ) )
+                  (error-in-index line-num "path doesn't exist or unknown type"))))
+        (error-in-index line-num "path isn't safe") ) )
 
   (if (absolute-pathname? path)
       (let ((full-path (make-pathname root-dir (trim-path-selector path))))
@@ -131,7 +123,7 @@
 ;;
 ;; Returns:
 ;;   The line as a menu item
-;; Logs an error and raises an exception:
+;; Saises an exception:
 ;;   If there is a problem
 (define (parse-line line-num root-dir selector line)
   (let ((link-match (irregex-search index-link-split-regex line)))

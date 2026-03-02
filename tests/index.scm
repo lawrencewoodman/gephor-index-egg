@@ -3,64 +3,40 @@
 (test-group "index"
 
 
-  (test "process-index raises an exception and logs an error if file path in 'index' doesn't exist"
-        '(#f "ts=#t level=error msg=\"problem processing index: path doesn't exist or unknown type\" line-num=2 client-address=127.0.0.1\n" serve-index "problem processing index")
+  (test "process-index raises an exception if file path in 'index' doesn't exist"
+        '(#f serve-index "problem processing index at line 2: path doesn't exist or unknown type")
         (let ((index "hello\n=> nonexistent.txt A missing file"))
-          (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
-            (run/get-log-and-exn
-              'info
-              confirm-log-entries-valid-timestamp
-              (process-index fixtures-dir "dir-a" index) ) ) ) )
+          (run/get-exn (process-index fixtures-dir "dir-a" index) ) ) )
 
 
-  (test "process-index raises an exception and logs an error if an absolute path in 'index' is unsafe"
-        '(#f "ts=#t level=error msg=\"problem processing index: path isn't safe\" line-num=1 client-address=127.0.0.1\n" serve-index "problem processing index")
+  (test "process-index raises an exception if an absolute path in 'index' is unsafe"
+        '(#f serve-index "problem processing index at line 1: path isn't safe")
         (let ((index "=> /../run.scm An unsafe absolute link\n"))
-          (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
-            (run/get-log-and-exn
-              'info
-              confirm-log-entries-valid-timestamp
-              (process-index fixtures-dir "dir-a" index) ) ) ) )
+          (run/get-exn (process-index fixtures-dir "dir-a" index) ) ) )
 
 
-  (test "process-index raises an exception and logs an error if a link to a directory doesn't have a trailing '/'"
-        '(#f "ts=#t level=error msg=\"problem processing index: directory path missing trailing '/'\" line-num=2 client-address=127.0.0.1\n" serve-index "problem processing index")
+  (test "process-index raises an exception if a link to a directory doesn't have a trailing '/'"
+        '(#f serve-index "problem processing index at line 2: directory path missing trailing '/'")
         (let ((index "before\n=> dir-ba This is actually a directory\nafter"))
-          (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
-            (run/get-log-and-exn
-              'info
-              confirm-log-entries-valid-timestamp
-              (process-index fixtures-dir "dir-b" index) ) ) ) )
+          (run/get-exn (process-index fixtures-dir "dir-b" index) ) ) )
 
 
-  (test "process-index raises an exception and logs an error if a relative link in 'index' is unsafe"
-        '(#f "ts=#t level=error msg=\"problem processing index: path isn't safe\" line-num=2 client-address=127.0.0.1\n" serve-index "problem processing index")
+  (test "process-index raises an exception if a relative link in 'index' is unsafe"
+        '(#f serve-index "problem processing index at line 2: path isn't safe")
         (let ((index "before\n=> ../run.scm An unsafe relative link\nafter"))
-          (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
-            (run/get-log-and-exn
-              'info
-              confirm-log-entries-valid-timestamp
-              (process-index fixtures-dir "dir-b" index) ) ) ) )
+          (run/get-exn (process-index fixtures-dir "dir-b" index) ) ) )
 
 
-  (test "process-index raises an error and logs an error if a URL is invalid"
-        '(#f "ts=#t level=error msg=\"problem processing index: invalid URL\" line-num=2 client-address=127.0.0.1\n" serve-index "problem processing index")
+  (test "process-index raises an exception if a URL is invalid"
+        '(#f serve-index "problem processing index at line 2: invalid URL")
         (let ((index "before\n=> telnet://example.com/fred telnet to example\nafter"))
-          (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
-            (run/get-log-and-exn
-              'info
-              confirm-log-entries-valid-timestamp
-              (process-index fixtures-dir "dir-a" index) ) ) ) )
+          (run/get-exn (process-index fixtures-dir "dir-a" index) ) ) )
 
 
   (test "process-index counts lines properly when there are initial blank lines if there is an error"
-        '(#f "ts=#t level=error msg=\"problem processing index: invalid URL\" line-num=4 client-address=127.0.0.1\n" serve-index "problem processing index")
+        '(#f serve-index "problem processing index at line 4: invalid URL")
         (let ((index "\n  \nbefore\n=> telnet://example.com/fred telnet to example\nafter"))
-          (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
-            (run/get-log-and-exn
-              'info
-              confirm-log-entries-valid-timestamp
-              (process-index fixtures-dir "dir-a" index) ) ) ) )
+          (run/get-exn (process-index fixtures-dir "dir-a" index) ) ) )
 
 
   (test "process-index removes blank lines at top and bottom of index"

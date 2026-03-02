@@ -25,7 +25,6 @@
         srfi-1
         srfi-13
         srfi-14
-        logfmt-logger
         gephor)
 
 
@@ -33,7 +32,6 @@
 ;; srfi-1         - List procedures
 ;; srfi-13        - String library
 ;; srfi-14        - Character set library
-;; logfmt-logger  - Logger using logfmt
 ;; gephor         - A Gopher server
 
 
