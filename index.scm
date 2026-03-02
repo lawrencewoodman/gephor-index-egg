@@ -96,7 +96,7 @@
   (define (make-item full-path item-selector)
     (if (safe-path? root-dir full-path)
         (if (directory? full-path)
-            (error/log-error "problem processing index: path is a directory but link doesn't have a trailing '/'"
+            (error/log-error "problem processing index: directory path missing trailing '/'"
                              (cons 'line-num line-num))
             (let ((item (menu-item-file full-path username item-selector)))
               (if item

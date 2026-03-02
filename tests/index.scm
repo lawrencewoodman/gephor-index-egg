@@ -24,7 +24,7 @@
 
 
   (test "process-index raises an exception and logs an error if a link to a directory doesn't have a trailing '/'"
-        '(#f "ts=#t level=error msg=\"problem processing index: path is a directory but link doesn't have a trailing '/'\" line-num=2 client-address=127.0.0.1\n" serve-index "problem processing index")
+        '(#f "ts=#t level=error msg=\"problem processing index: directory path missing trailing '/'\" line-num=2 client-address=127.0.0.1\n" serve-index "problem processing index")
         (let ((index "before\n=> dir-ba This is actually a directory\nafter"))
           (parameterize ((log-context (list (cons 'client-address "127.0.0.1"))))
             (run/get-log-and-exn
