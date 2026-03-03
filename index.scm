@@ -71,6 +71,7 @@
 ;;   The URL as a menu item
 ;; Raises an exception:
 ;;   If URL is invalid
+(: url-item (integer string string --> *))
 (define (url-item line-num path username)
   (let ((item (menu-item-url username path)))
     (or item
