@@ -66,7 +66,6 @@
 
 
 ;; Return a menu item from a URL
-;; TODO: Test the error from this
 ;;
 ;; Returns:
 ;;   The URL as a menu item
@@ -74,13 +73,12 @@
 ;;   If URL is invalid
 (define (url-item line-num path username)
   (let ((item (menu-item-url username path)))
-    (if item
-        item
+    (or item
         (error-in-index line-num "invalid URL") ) ) )
 
 
 ;; Return a file menu item
-;; TODO: Test the error from this
+;;
 ;; Returns:
 ;;   A menu item pointing to the file
 ;; Raises an exception:
@@ -94,8 +92,7 @@
         (if (directory? full-path)
             (error-in-index line-num "directory path missing trailing '/'")
             (let ((item (menu-item-file full-path username item-selector)))
-              (if item
-                  item
+              (or item
                   (error-in-index line-num "path doesn't exist or unknown type"))))
         (error-in-index line-num "path isn't safe") ) )
 
