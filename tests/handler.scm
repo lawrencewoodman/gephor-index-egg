@@ -7,8 +7,6 @@
 
   ;; TODO: Add test for root-dir not existing in case specific incorrectly
 
-  ;; TODO: Add Test for working through the three handlers in serve-path/index
-
   (test "serve-path/index returns result of serve-index if 'index' is present and can be processed properly"
         ;; Whitespace is stripped at the beginning and end of file
         "iA simple index file to check it is interpreted by serve-path\tdir-b\tlocalhost\t70\r\n.\r\n"
