@@ -56,7 +56,7 @@
                                   (make-request "dir-index_error" "127.0.0.1") ) ) )
 
 
-  (test "serve-index raises an error if an 'index' file isn't readable"
+  (test "serve-index raises an exception if an 'index' file isn't readable"
         (list 'safe-read-file
               (sprintf "can't read file, file is too big: ~A"
                         (make-pathname fixtures-dir "dir-b/index")))
