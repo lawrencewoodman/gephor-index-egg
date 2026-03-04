@@ -31,9 +31,7 @@ A URL can point to the schemes/protocols used by `make-item-url`, currently:
 * http
 * https
 
-Any problems processing the index file, such as if a file doesn't exist, will be logged but the file will continue to be processed if possible.
-
-If displayed text on a line is greater than 69 characters a warning will be logged.
+Any problems processing the index file will raise an exception.
 
 
 Testing
