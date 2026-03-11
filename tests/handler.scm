@@ -42,12 +42,12 @@
         (serve-index fixtures-dir (make-request "dir-b" "127.0.0.1") ) )
 
 
-  ;; TODO: Should this actually return Not-Applicable?
-  (test "serve-index process empty 'index' files properly if present"
-        ;; Whitespace is stripped at the beginning and end of file
-        ".\r\n"
-        (serve-index fixtures-dir (make-request "dir-index_empty_file"
-                                                 "127.0.0.1") ) )
+  (test "serve-index returns #f if 'index' is empty or just whitespace"
+        '(#f #f)
+        (map (lambda (selector)
+               (serve-index fixtures-dir
+                            (make-request selector "127.0.0.1")))
+             '("dir-index_empty_file" "dir-index_whitespace_file") ) )
 
 
   (test "serve-index raises an exception if 'index' file has an unsafe link"

@@ -34,7 +34,7 @@
 ;;
 ;; Returns:
 ;;   The index file turned into a rendered menu
-;;   #f if the request can't be handled
+;;   #f if the request can't be handled or index is empty/blank
 ;; Raises an exception:
 ;;   If index file size > max-response-size
 ;;   If there are any other problems
@@ -55,6 +55,7 @@
                                                 index-path))
                          (menu (process-index root-dir selector index)))
                     (and menu
+                         (not (null? menu))
                          (menu-render menu) ) ) ) ) ) ) )
 
 
