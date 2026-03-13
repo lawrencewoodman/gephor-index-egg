@@ -22,17 +22,10 @@
 ;; Raises an exception:
 ;;   If there is a problem
 ;; TODO: rename?
-(: process-index (string string string --> *))
+(: process-index (string string string --> (list-of *)))
 (define (process-index root-dir request-selector nex-index)
-  (define (strip-initial-blank-lines lines)
-    (if (null? lines)
-        '()
-        (if (string-every char-set:whitespace (car lines))
-            (strip-initial-blank-lines (cdr lines))
-            lines) ) )
-
   (let* ((lines (string-split
-                   (string-trim-right nex-index char-set:whitespace) "\n" #t))
+                  (string-trim-right nex-index char-set:whitespace) "\n" #t))
          (slines (strip-initial-blank-lines lines))
          (first-non-blank-line (add1 (- (length lines) (length slines)))))
     (let loop ((lines slines) (line-num first-non-blank-line) (plines '()))
@@ -63,6 +56,16 @@
 (: error-in-index (integer string --> noreturn))
 (define (error-in-index line-num msg)
   (error* 'serve-index "problem processing index at line ~A: ~A" line-num msg) )
+
+
+;; Return a list of lines with the initial blank lines removed
+(: strip-initial-blank-lines ((list-of string) --> (list-of string)))
+(define (strip-initial-blank-lines lines)
+  (if (null? lines)
+      '()
+      (if (string-every char-set:whitespace (car lines))
+          (strip-initial-blank-lines (cdr lines))
+          lines) ) )
 
 
 ;; Return a menu item from a URL
