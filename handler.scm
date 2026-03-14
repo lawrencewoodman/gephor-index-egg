@@ -54,8 +54,7 @@
                                                 root-dir
                                                 index-path))
                          (menu (process-index root-dir selector index)))
-                    (and menu
-                         (not (null? menu))
+                    (and (not (null? menu))
                          (menu-render menu) ) ) ) ) ) ) )
 
 

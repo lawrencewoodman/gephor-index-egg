@@ -18,7 +18,7 @@
 ;; of menu items.
 ;;
 ;; Returns:
-;;   The index file convert to a menu
+;;   The index file converted to a menu
 ;; Raises an exception:
 ;;   If there is a problem
 ;; TODO: rename?
@@ -33,8 +33,7 @@
           (reverse plines)
           (let* ((line (car lines))
                  (item (parse-line line-num root-dir request-selector line)))
-            (and item
-                 (loop (cdr lines) (add1 line-num) (cons item plines) ) ) ) ) ) ) )
+            (loop (cdr lines) (add1 line-num) (cons item plines) ) ) ) ) ) )
 
 
 ;; Internal Definitions ------------------------------------------------------
@@ -124,8 +123,7 @@
 ;;
 ;; Returns:
 ;;   The line as a menu item
-;; Saises an exception:
-;;   If there is a problem
+(: parse-line (integer string string string --> *))
 (define (parse-line line-num root-dir selector line)
   (let ((link-match (irregex-search index-link-split-regex line)))
     (if (irregex-match-data? link-match)
