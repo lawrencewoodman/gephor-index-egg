@@ -4,7 +4,7 @@
 
 
   (test "process-index raises an exception if file path in 'index' doesn't exist"
-        '(#f serve-index "problem processing index at line 2: path doesn't exist or unknown type")
+        '(#f serve-index "problem processing index at line 2: path doesn't exist")
         (let ((index "hello\n=> nonexistent.txt A missing file"))
           (run/get-exn (process-index fixtures-dir "dir-a" index) ) ) )
 

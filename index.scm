@@ -86,7 +86,7 @@
 ;;   A menu item pointing to the file
 ;; Raises an exception:
 ;;   if the path on the => line is a directory and doesn't have a training /
-;;   if the path on the => line doesn't exist or is an unknown type
+;;   if the path on the => line doesn't exist
 ;;   if the path on the => line isn't safe
 (: file-item (integer string string string string --> *))
 (define (file-item line-num root-dir request-selector path username)
@@ -96,7 +96,7 @@
             (error-in-index line-num "directory path missing trailing '/'")
             (let ((item (menu-item-file full-path username item-selector)))
               (or item
-                  (error-in-index line-num "path doesn't exist or unknown type"))))
+                  (error-in-index line-num "path doesn't exist"))))
         (error-in-index line-num "path isn't safe") ) )
 
   (if (absolute-pathname? path)
