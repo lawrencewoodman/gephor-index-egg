@@ -71,13 +71,11 @@
 ;;
 ;; Returns:
 ;;   The URL as a menu item
-;; Raises an exception:
-;;   If URL is invalid
-(: url-item (integer string string --> *))
+;;   #f if the URL is invalid
+(: url-item (integer string string --> (or * false)))
 (define (url-item line-num path username)
-  (let ((item (menu-item-url username path)))
-    (or item
-        (error-in-index line-num "invalid URL") ) ) )
+  (or (menu-item-url username path)
+      (error-in-index line-num "invalid URL") ) )
 
 
 ;; Return a file menu item
