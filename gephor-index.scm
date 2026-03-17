@@ -7,7 +7,6 @@
 ;;;
 
 
-;; TODO: rename  exported functions to make consistent and more predictable?
 (module gephor-index
   (process-index
    serve-path/index
