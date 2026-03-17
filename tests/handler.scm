@@ -5,7 +5,6 @@
   (parameterize ((server-hostname "localhost")
                  (server-port 70))
 
-  ;; TODO: Add test for root-dir not existing in case specific incorrectly
 
   (test "serve-path/index returns result of serve-index if 'index' is present and can be processed properly"
         ;; Whitespace is stripped at the beginning and end of file
@@ -48,6 +47,17 @@
                (serve-index fixtures-dir
                             (make-request selector "127.0.0.1")))
              '("dir-index_empty_file" "dir-index_whitespace_file") ) )
+
+
+  (test "serve-index returns #f if root-dir doesn't exist"
+        #f
+        (serve-index (make-pathname fixtures-dir "nothere")
+                     (make-request "" "127.0.0.1") ) )
+
+  (test "serve-index raises an exception if root-dir is empty"
+        '(#f safe-path? "root-dir must be an absolute directory: ")
+        (run/get-exn (serve-index ""
+                                  (make-request "dir-index_error" "127.0.0.1") ) ) )
 
 
   (test "serve-index raises an exception if 'index' file has an unsafe link"
