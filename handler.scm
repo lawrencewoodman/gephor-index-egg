@@ -49,7 +49,6 @@
          (directory? local-path)
            (let ((index-path (make-pathname local-path "index")))
              (and (file-exists? index-path)
-                  ;; TODO: This needs testing if either fail
                   (let* ((index (safe-read-file (max-response-size)
                                                 root-dir
                                                 index-path))
