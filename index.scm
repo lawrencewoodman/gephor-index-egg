@@ -21,7 +21,6 @@
 ;;   The index file converted to a menu
 ;; Raises an exception:
 ;;   If there is a problem
-;; TODO: rename?
 (: process-index (string string string --> (list-of *)))
 (define (process-index root-dir request-selector nex-index)
   (let* ((lines (string-split
