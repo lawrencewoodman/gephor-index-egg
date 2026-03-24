@@ -54,6 +54,25 @@
         (serve-index (make-pathname fixtures-dir "nothere")
                      (make-request "" "127.0.0.1") ) )
 
+
+  (test "serve-index returns #f if 'index' can't be read if for example it isn't world readable"
+        '("iThis is used to test an index file that isn't world readable\t\tlocalhost\t70\r\n.\r\n" #f)
+        (let* ((tmpdir (create-temporary-directory))
+               (tmpfile (make-pathname tmpdir "index")))
+          (copy-file (make-pathname (list fixtures-dir "dir-index_world_readable")
+                                    "index")
+                     tmpfile)
+          (let ((response1 (serve-index tmpdir (make-request "" "127.0.0.1")))
+                (response2
+                  (begin
+                    ;; Make tmpfile non world readable
+                    (set-file-permissions! tmpfile
+                                           (bitwise-and (file-permissions tmpfile)
+                                                        (bitwise-not perm/iroth)))
+                    (serve-index tmpdir (make-request "" "127.0.0.1")))))
+            (list response1 response2) ) ) )
+
+
   (test "serve-index raises an exception if root-dir is empty"
         '(#f safe-path? "root-dir must be an absolute directory: ")
         (run/get-exn (serve-index ""

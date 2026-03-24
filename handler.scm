@@ -34,7 +34,7 @@
 ;;
 ;; Returns:
 ;;   The index file turned into a rendered menu
-;;   #f if the request can't be handled or index is empty/blank
+;;   #f if the request can't be handled
 ;; Raises an exception:
 ;;   If index file size > max-response-size
 ;;   If there are any other problems
@@ -49,9 +49,9 @@
          (directory? local-path)
            (let ((index-path (make-pathname local-path "index")))
              (and (file-exists? index-path)
-                  (let* ((index (safe-read-file (max-response-size)
-                                                root-dir
-                                                index-path))
+                  (and-let* ((index (safe-read-file (max-response-size)
+                                                    root-dir
+                                                    index-path))
                          (menu (process-index root-dir selector index)))
                     (and (not (null? menu))
                          (menu-render menu) ) ) ) ) ) ) )
