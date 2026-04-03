@@ -22,7 +22,7 @@ An 'index' file is a standard text file that will be converted into a gophermap.
 => Path/URL [Optional Text]
 ```
 
-Paths on the local machine must end with a '/' if they point to a directory.  If a 'Path' is given rather than a full URL then it will be checked that it exists and an appropriate gopher itemtype will be assigned to it.  Paths can be absolute, based off of `root-dir` or relative to the path in which the 'index' file is located.
+Paths on the local machine must end with a '/' if they point to a directory.  If a 'Path' is given rather than a full URL then it will be checked that it exists and an appropriate gopher itemtype will be assigned to it.  Paths can be absolute, based off of `document-root` or relative to the path in which the 'index' file is located.
 
 
 A URL can point to the schemes/protocols used by `make-item-url`, currently:

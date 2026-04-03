@@ -21,8 +21,8 @@
 ;;   The index file converted to a menu
 ;; Raises an exception:
 ;;   If there is a problem
-(: process-index (string string string --> (list-of *)))
-(define (process-index root-dir request-selector nex-index)
+(: process-index (string string --> (list-of *)))
+(define (process-index request-selector nex-index)
   (let* ((lines (string-split
                   (string-trim-right nex-index char-set:whitespace) "\n" #t))
          (slines (strip-initial-blank-lines lines))
@@ -31,7 +31,7 @@
       (if (null? lines)
           (reverse plines)
           (let* ((line (car lines))
-                 (item (parse-line line-num root-dir request-selector line)))
+                 (item (parse-line line-num request-selector line)))
             (loop (cdr lines) (add1 line-num) (cons item plines) ) ) ) ) ) )
 
 
@@ -85,10 +85,10 @@
 ;;   if the path on the => line is a directory and doesn't have a training /
 ;;   if the path on the => line doesn't exist
 ;;   if the path on the => line isn't safe
-(: file-item (integer string string string string --> *))
-(define (file-item line-num root-dir request-selector path username)
+(: file-item (integer string string string --> *))
+(define (file-item line-num request-selector path username)
   (define (make-item full-path item-selector)
-    (if (safe-path? root-dir full-path)
+    (if (safe-path? full-path)
         (if (directory? full-path)
             (error-in-index line-num "directory path missing trailing '/'")
             (let ((item (menu-item-file full-path username item-selector)))
@@ -97,9 +97,9 @@
         (error-in-index line-num "path isn't safe") ) )
 
   (if (absolute-pathname? path)
-      (let ((full-path (make-pathname root-dir (trim-path-selector path))))
+      (let ((full-path (make-pathname (document-root) (trim-path-selector path))))
         (make-item full-path (trim-path-selector path)))
-      (let ((full-path (make-pathname (list root-dir request-selector)
+      (let ((full-path (make-pathname (list (document-root) request-selector)
                                       (trim-path-selector path)))
             (item-selector (make-pathname request-selector path)))
         (make-item full-path item-selector) ) ) )
@@ -120,8 +120,8 @@
 ;;
 ;; Returns:
 ;;   The line as a menu item
-(: parse-line (integer string string string --> *))
-(define (parse-line line-num root-dir selector line)
+(: parse-line (integer string string --> *))
+(define (parse-line line-num selector line)
   (let ((link-match (irregex-search index-link-split-regex line)))
     (if (irregex-match-data? link-match)
         (let* ((path (irregex-match-substring link-match 1))
@@ -141,7 +141,7 @@
             ((is-dir? path)
               (dir-item selector path chomped-username))
             (else
-              (file-item line-num root-dir selector path username))))
+              (file-item line-num selector path username))))
         ;; Current selector is used for info itemtype so that if type
         ;; not supported by client but still displayed then it
         ;; will just link to the page that it is being displayed on

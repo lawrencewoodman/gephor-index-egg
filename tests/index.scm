@@ -2,41 +2,42 @@
 
 (test-group "index"
 
+  (parameterize ((document-root fixtures-dir))
 
   (test "process-index raises an exception if file path in 'index' doesn't exist"
         '(#f serve-index "problem processing index at line 2: path doesn't exist")
         (let ((index "hello\n=> nonexistent.txt A missing file"))
-          (run/get-exn (process-index fixtures-dir "dir-a" index) ) ) )
+          (run/get-exn (process-index "dir-a" index) ) ) )
 
 
   (test "process-index raises an exception if an absolute path in 'index' is unsafe"
         '(#f serve-index "problem processing index at line 1: path isn't safe")
         (let ((index "=> /../run.scm An unsafe absolute link\n"))
-          (run/get-exn (process-index fixtures-dir "dir-a" index) ) ) )
+          (run/get-exn (process-index "dir-a" index) ) ) )
 
 
   (test "process-index raises an exception if a link to a directory doesn't have a trailing '/'"
         '(#f serve-index "problem processing index at line 2: directory path missing trailing '/'")
         (let ((index "before\n=> dir-ba This is actually a directory\nafter"))
-          (run/get-exn (process-index fixtures-dir "dir-b" index) ) ) )
+          (run/get-exn (process-index "dir-b" index) ) ) )
 
 
   (test "process-index raises an exception if a relative link in 'index' is unsafe"
         '(#f serve-index "problem processing index at line 2: path isn't safe")
         (let ((index "before\n=> ../run.scm An unsafe relative link\nafter"))
-          (run/get-exn (process-index fixtures-dir "dir-b" index) ) ) )
+          (run/get-exn (process-index "dir-b" index) ) ) )
 
 
   (test "process-index raises an exception if a URL is invalid"
         '(#f serve-index "problem processing index at line 2: invalid URL")
         (let ((index "before\n=> telnet://example.com/fred telnet to example\nafter"))
-          (run/get-exn (process-index fixtures-dir "dir-a" index) ) ) )
+          (run/get-exn (process-index "dir-a" index) ) ) )
 
 
   (test "process-index counts lines properly when there are initial blank lines if there is an error"
         '(#f serve-index "problem processing index at line 4: invalid URL")
         (let ((index "\n  \nbefore\n=> telnet://example.com/fred telnet to example\nafter"))
-          (run/get-exn (process-index fixtures-dir "dir-a" index) ) ) )
+          (run/get-exn (process-index "dir-a" index) ) ) )
 
 
   (test "process-index removes blank lines at top and bottom of index"
@@ -51,7 +52,7 @@
                        ""
                        "")
                        "\n")))
-          (menu-render (process-index fixtures-dir "dir-a" index) ) ) )
+          (menu-render (process-index "dir-a" index) ) ) )
 
 
   (test "process-index doesn't remove initial whitespace of first non blank line"
@@ -64,7 +65,7 @@
                        ""
                        "   This line has a few spaces at the start and two blanks lines before it")
                        "\n")))
-          (menu-render (process-index fixtures-dir "dir-a" index) ) ) )
+          (menu-render (process-index "dir-a" index) ) ) )
 
 
   (test "process-index only recognizes links where => is at the beginning of the line"
@@ -77,7 +78,7 @@
                        "=> / A link with => starting at the beginning of the line"
                        " => / This isn't a link because => doesn't start at the beginning of the line")
                        "\n")))
-          (menu-render (process-index fixtures-dir "dir-a" index) ) ) )
+          (menu-render (process-index "dir-a" index) ) ) )
 
 
   (test "process-index supports absolute links"
@@ -96,7 +97,7 @@
                        "=>     /dir-a/    Lots of white space (will be removed)    "
                        "=>     /b.txt     Lots of white space (will be removed)    ")
                        "\n")))
-          (menu-render (process-index fixtures-dir "dir-a" index) ) ) )
+          (menu-render (process-index "dir-a" index) ) ) )
 
 
   (test "process-index supports relative links"
@@ -120,7 +121,7 @@
                        "=>     dir-ba/baa.txt     Lots of white space (will be removed)    ")
                        "\n")))
 
-          (menu-render (process-index fixtures-dir "dir-b" index) ) ) )
+          (menu-render (process-index "dir-b" index) ) ) )
 
 
   (test "process-index supports links to directories that don't exist as long as the link ends with '/'"
@@ -133,7 +134,7 @@
                        "=> /unknown/"
                        "=> unknown/")
                        "\n")))
-          (menu-render (process-index fixtures-dir "dir-a" index) ) ) )
+          (menu-render (process-index "dir-a" index) ) ) )
 
 
   (test "process-index uses '/' as the username for a link with this path that doesn't specify a username"
@@ -144,7 +145,7 @@
         (let ((index (string-intersperse '(
                        "=> /"
                        "\n"))))
-          (menu-render (process-index fixtures-dir "" index) ) ) )
+          (menu-render (process-index "" index) ) ) )
 
 
   (test "process-index supports URL links"
@@ -163,7 +164,7 @@
                        "=> http://example.com/fred Fred's things"
                        "=> http://example.com/fred      Lots of white space (will be removed)   ")
                        "\n")))
-          (menu-render (process-index fixtures-dir "dir-b" index) ) ) )
+          (menu-render (process-index "dir-b" index) ) ) )
 
 
   (test "process-index supports URL links with a ':' in path"
@@ -172,7 +173,7 @@
           ".\r\n")
           "\r\n")
         (let ((index "=> https://example.com/http://old.example.com/ Old Example"))
-          (menu-render (process-index fixtures-dir "dir-a" index) ) ) )
+          (menu-render (process-index "dir-a" index) ) ) )
 
 
-)
+))
